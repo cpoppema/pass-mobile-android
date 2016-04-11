@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.nfc.cardemulation.CardEmulation;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
@@ -90,10 +91,14 @@ public class PgpHelper {
     public String decrypt(String encryptedData, String password) {
         try
         {
-            JcaPGPObjectFactory pgpF = new JcaPGPObjectFactory(encryptedData.getBytes(Charset.forName("UTF-8")));
+            byte[] encrypted = encryptedData.getBytes(Charset.forName("UTF-8"));
+            InputStream in = new ByteArrayInputStream(encrypted);
+            in = PGPUtil.getDecoderStream(in);
+            JcaPGPObjectFactory pgpF = new JcaPGPObjectFactory(in);
             PGPEncryptedDataList    enc;
 
             Object                  o = pgpF.nextObject();
+            Log.d("MAIN", "" + pgpF.iterator().hasNext());
             //
             // the first object might be a PGP marker packet.
             //
