@@ -15,6 +15,7 @@ import org.spongycastle.openpgp.PGPEncryptedDataList;
 import org.spongycastle.openpgp.PGPException;
 import org.spongycastle.openpgp.PGPKeyPair;
 import org.spongycastle.openpgp.PGPLiteralData;
+import org.spongycastle.openpgp.PGPObjectFactory;
 import org.spongycastle.openpgp.PGPOnePassSignatureList;
 import org.spongycastle.openpgp.PGPPrivateKey;
 import org.spongycastle.openpgp.PGPPublicKey;
@@ -28,6 +29,7 @@ import org.spongycastle.openpgp.PGPSignature;
 import org.spongycastle.openpgp.PGPUtil;
 import org.spongycastle.openpgp.jcajce.JcaPGPObjectFactory;
 import org.spongycastle.openpgp.operator.PGPDigestCalculator;
+import org.spongycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
 import org.spongycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.spongycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.spongycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
@@ -67,11 +69,16 @@ public class PgpHelper {
         return PreferenceManager.getDefaultSharedPreferences(mContext).getString("public", "");
     }
 
+    private long getSecretKeyId() {
+        return PreferenceManager.getDefaultSharedPreferences(mContext).getLong("secret_id", -1);
+    }
+
     private PGPPrivateKey getPrivateKey(String password) {
 
         try {
-            String privateKeyArmored = PreferenceManager.getDefaultSharedPreferences(mContext).getString("private", "");
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(privateKeyArmored.getBytes(Charset.forName("UTF-8")));
+            String privateKeyArmored = PreferenceManager.getDefaultSharedPreferences(mContext).getString("secret", "");
+            InputStream inputStream = new ByteArrayInputStream(privateKeyArmored.getBytes(Charset.forName("UTF-8")));
+            inputStream = PGPUtil.getDecoderStream(inputStream);
 
             PGPSecretKeyRingCollection pgpSec = new PGPSecretKeyRingCollection(
                     inputStream, new JcaKeyFingerprintCalculator());
@@ -80,7 +87,9 @@ public class PgpHelper {
 
             PGPSecretKey secretKey = pgpSec.getSecretKey(keyId);
 
-            return secretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder().setProvider("SC").build(password.toCharArray()));
+            if (secretKey != null) {
+                return secretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder().setProvider("SC").build(password.toCharArray()));
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -91,77 +100,72 @@ public class PgpHelper {
     public String decrypt(String encryptedData, String password) {
         try
         {
-            byte[] encrypted = encryptedData.getBytes(Charset.forName("UTF-8"));
-            InputStream in = new ByteArrayInputStream(encrypted);
-            in = PGPUtil.getDecoderStream(in);
-            JcaPGPObjectFactory pgpF = new JcaPGPObjectFactory(in);
-            PGPEncryptedDataList    enc;
-
-            Object                  o = pgpF.nextObject();
-            Log.d("MAIN", "" + pgpF.iterator().hasNext());
-            //
-            // the first object might be a PGP marker packet.
-            //
-            if (o instanceof PGPEncryptedDataList)
-            {
-                enc = (PGPEncryptedDataList)o;
-            }
-            else
-            {
-                enc = (PGPEncryptedDataList)pgpF.nextObject();
-            }
-
-            //
-            // find the secret key
-            //
-            Iterator it = enc.getEncryptedDataObjects();
-            PGPPrivateKey privateKey = getPrivateKey(password);
-            PGPPublicKeyEncryptedData pbe = (PGPPublicKeyEncryptedData) it.next();
-
-            InputStream         clear = pbe.getDataStream(new JcePublicKeyDataDecryptorFactoryBuilder().setProvider("SC").build(privateKey));
-
-            JcaPGPObjectFactory    plainFact = new JcaPGPObjectFactory(clear);
-
-            Object              message = plainFact.nextObject();
-
-            if (message instanceof PGPCompressedData)
-            {
-                PGPCompressedData   cData = (PGPCompressedData)message;
-                JcaPGPObjectFactory    pgpFact = new JcaPGPObjectFactory(cData.getDataStream());
-
-                message = pgpFact.nextObject();
-            }
-
-            if (message instanceof PGPLiteralData)
-            {
-                PGPLiteralData ld = (PGPLiteralData)message;
-
-                return new String(Streams.readAll(ld.getInputStream()), Charset.forName("UTF-8"));
-            }
-            else if (message instanceof PGPOnePassSignatureList)
-            {
-                throw new PGPException("encrypted message contains a signed message - not literal data.");
-            }
-            else
-            {
-                throw new PGPException("message is not a simple encrypted file - type unknown.");
-            }
-
-//            if (pbe.isIntegrityProtected())
-//            {
-//                if (!pbe.verify())
-//                {
-//                    System.err.println("message failed integrity check");
-//                }
-//                else
-//                {
-//                    System.err.println("message integrity check passed");
-//                }
+            // WORKING
+//            byte[] encrypted = encryptedData.getBytes(Charset.forName("UTF-8"));
+//            InputStream in = new ByteArrayInputStream(encrypted);
+//            in = PGPUtil.getDecoderStream(in);
+//            PGPObjectFactory        pgpF = new JcaPGPObjectFactory(in);
+//            PGPEncryptedDataList    enc = (PGPEncryptedDataList)pgpF.nextObject();
+//
+//            PGPPublicKeyEncryptedData     pbe = (PGPPublicKeyEncryptedData)enc.get(0);
+//
+//            // Create for loop to find the message belonging to the key id.
+//
+//            PGPPrivateKey privateKey = getPrivateKey(password);
+//
+//            InputStream clear = pbe.getDataStream(new BcPublicKeyDataDecryptorFactory(privateKey));
+//
+//            PGPObjectFactory        pgpFact = new JcaPGPObjectFactory(clear);
+//
+//            Object       message = pgpFact.nextObject();
+//
+//            if (message instanceof PGPLiteralData) {
+//                PGPLiteralData ld = (PGPLiteralData)message;
+//
+//                return new String(Streams.readAll(ld.getInputStream()), Charset.forName("UTF-8"));
 //            }
-//            else
-//            {
-//                System.err.println("no message integrity check");
-//            }
+            byte[] encryptedBytes = encryptedData.getBytes(Charset.forName("UTF-8"));
+            InputStream encryptedInputStream = new ByteArrayInputStream(encryptedBytes);
+            encryptedInputStream = PGPUtil.getDecoderStream(encryptedInputStream);
+            PGPObjectFactory pgpObjectFactory = new JcaPGPObjectFactory(encryptedInputStream);
+            PGPEncryptedDataList encryptedDataList;
+
+            Object pgpObject = pgpObjectFactory.nextObject();
+
+            if (pgpObject instanceof PGPEncryptedDataList) {
+                encryptedDataList = (PGPEncryptedDataList) pgpObject;
+            } else {
+                encryptedDataList = (PGPEncryptedDataList) pgpObjectFactory.nextObject();
+            }
+
+            PGPPublicKeyEncryptedData publicKeyEncryptedData = null;
+
+            Iterator encryptedDataIterator = encryptedDataList.getEncryptedDataObjects();
+            PGPPrivateKey privateKey = null;
+
+            while (encryptedDataIterator.hasNext()) {
+                publicKeyEncryptedData = (PGPPublicKeyEncryptedData) encryptedDataIterator.next();
+                long keyId = publicKeyEncryptedData.getKeyID();
+                if (keyId == getSecretKeyId()) {
+                    privateKey = getPrivateKey(password);
+                }
+            }
+
+            if (privateKey == null) {
+                return "";
+            }
+
+            InputStream decryptedData = publicKeyEncryptedData.getDataStream(new BcPublicKeyDataDecryptorFactory(privateKey));
+
+            pgpObjectFactory = new JcaPGPObjectFactory(decryptedData);
+
+            Object decryptedMessage = pgpObjectFactory.nextObject();
+
+            // TODO: Check for compressed data.
+            if (decryptedMessage instanceof PGPLiteralData) {
+                PGPLiteralData literalData = (PGPLiteralData) decryptedMessage;
+                return new String(Streams.readAll(literalData.getInputStream()), Charset.forName("UTF-8"));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -217,3 +221,18 @@ public class PgpHelper {
         }
     }
 }
+
+//    PGPObjectFactory        pgpF = new PGPObjectFactory(in);
+//    PGPEncryptedDataList    enc = (PGPEncryptedDataList)pgpF.nextObject();
+//
+//    PGPPBEEncryptedData     pbe = (PGPPBEEncryptedData)enc.get(0);
+//
+//    InputStream clear = pbe.getDataStream(passPhrase, "BC");
+//
+//    PGPObjectFactory        pgpFact = new PGPObjectFactory(clear);
+//
+//    PGPCompressedData       cData = (PGPCompressedData)pgpFact.nextObject();
+//
+//pgpFact = new PGPObjectFactory(cData.getDataStream());
+//
+//        PGPLiteralData          ld = (PGPLiteralData)pgpFact.nextObject();
