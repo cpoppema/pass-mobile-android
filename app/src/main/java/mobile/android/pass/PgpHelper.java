@@ -56,6 +56,7 @@ import java.util.Iterator;
  */
 public class PgpHelper {
     private Context mContext;
+    private long mSecretKeyId = -1;
 
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -70,7 +71,11 @@ public class PgpHelper {
     }
 
     private long getSecretKeyId() {
-        return PreferenceManager.getDefaultSharedPreferences(mContext).getLong("secret_id", -1);
+        // Cache.
+        if (mSecretKeyId == -1) {
+            mSecretKeyId = PreferenceManager.getDefaultSharedPreferences(mContext).getLong("secret_id", 0);
+        }
+        return mSecretKeyId;
     }
 
     private PGPPrivateKey getPrivateKey(String password) {
@@ -83,9 +88,7 @@ public class PgpHelper {
             PGPSecretKeyRingCollection pgpSec = new PGPSecretKeyRingCollection(
                     inputStream, new JcaKeyFingerprintCalculator());
 
-            long keyId = PreferenceManager.getDefaultSharedPreferences(mContext).getLong("secret_id", -1);
-
-            PGPSecretKey secretKey = pgpSec.getSecretKey(keyId);
+            PGPSecretKey secretKey = pgpSec.getSecretKey(getSecretKeyId());
 
             if (secretKey != null) {
                 return secretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder().setProvider("SC").build(password.toCharArray()));
@@ -100,30 +103,6 @@ public class PgpHelper {
     public String decrypt(String encryptedData, String password) {
         try
         {
-            // WORKING
-//            byte[] encrypted = encryptedData.getBytes(Charset.forName("UTF-8"));
-//            InputStream in = new ByteArrayInputStream(encrypted);
-//            in = PGPUtil.getDecoderStream(in);
-//            PGPObjectFactory        pgpF = new JcaPGPObjectFactory(in);
-//            PGPEncryptedDataList    enc = (PGPEncryptedDataList)pgpF.nextObject();
-//
-//            PGPPublicKeyEncryptedData     pbe = (PGPPublicKeyEncryptedData)enc.get(0);
-//
-//            // Create for loop to find the message belonging to the key id.
-//
-//            PGPPrivateKey privateKey = getPrivateKey(password);
-//
-//            InputStream clear = pbe.getDataStream(new BcPublicKeyDataDecryptorFactory(privateKey));
-//
-//            PGPObjectFactory        pgpFact = new JcaPGPObjectFactory(clear);
-//
-//            Object       message = pgpFact.nextObject();
-//
-//            if (message instanceof PGPLiteralData) {
-//                PGPLiteralData ld = (PGPLiteralData)message;
-//
-//                return new String(Streams.readAll(ld.getInputStream()), Charset.forName("UTF-8"));
-//            }
             byte[] encryptedBytes = encryptedData.getBytes(Charset.forName("UTF-8"));
             InputStream encryptedInputStream = new ByteArrayInputStream(encryptedBytes);
             encryptedInputStream = PGPUtil.getDecoderStream(encryptedInputStream);
@@ -221,18 +200,3 @@ public class PgpHelper {
         }
     }
 }
-
-//    PGPObjectFactory        pgpF = new PGPObjectFactory(in);
-//    PGPEncryptedDataList    enc = (PGPEncryptedDataList)pgpF.nextObject();
-//
-//    PGPPBEEncryptedData     pbe = (PGPPBEEncryptedData)enc.get(0);
-//
-//    InputStream clear = pbe.getDataStream(passPhrase, "BC");
-//
-//    PGPObjectFactory        pgpFact = new PGPObjectFactory(clear);
-//
-//    PGPCompressedData       cData = (PGPCompressedData)pgpFact.nextObject();
-//
-//pgpFact = new PGPObjectFactory(cData.getDataStream());
-//
-//        PGPLiteralData          ld = (PGPLiteralData)pgpFact.nextObject();
