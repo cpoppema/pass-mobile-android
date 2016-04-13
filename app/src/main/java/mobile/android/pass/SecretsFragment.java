@@ -86,7 +86,6 @@ public class SecretsFragment
         setListAdapter(null);
         mPrivateKey = null;
         mSecrets = null;
-        setEmptyText("Refresh for password prompt");
     }
 
     @Override
@@ -108,7 +107,6 @@ public class SecretsFragment
         if (response.isSuccess()) {
             String decryptedJson = response.body().decryptResponseData(getActivity(), mPrivateKey);
             mSecrets = JsonHelper.convertJsonToSecretList(decryptedJson);
-            setEmptyText("No secrets found");
             SecretsAdapter secretsAdapter = new SecretsAdapter(getActivity(), android.R.layout.simple_list_item_2, mSecrets);
             setListAdapter(secretsAdapter);
         }

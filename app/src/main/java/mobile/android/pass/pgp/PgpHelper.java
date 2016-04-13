@@ -46,6 +46,7 @@ import java.util.Iterator;
  */
 public class PgpHelper {
     private static final String PUBLIC_KEY = "public";
+    private static final String PUBLIC_KEY_NAME = "public_name";
     private static final String SECRET_KEY = "secret";
     private static final String SECRET_KEY_ID = "secret_id";
     private static final int KEY_PAIR_BITS = 2048;
@@ -73,6 +74,10 @@ public class PgpHelper {
      */
     public String getPublicKeyString() {
         return PreferenceManager.getDefaultSharedPreferences(mContext).getString(PUBLIC_KEY, "");
+    }
+
+    public String getPublicKeyName() {
+        return PreferenceManager.getDefaultSharedPreferences(mContext).getString(PUBLIC_KEY_NAME, "");
     }
 
     public String decrypt(String encryptedData, PGPPrivateKey privateKey) {
@@ -196,6 +201,7 @@ public class PgpHelper {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
             prefs.edit()
                     .putString(PUBLIC_KEY, publicKeyString)
+                    .putString(PUBLIC_KEY_NAME, name)
                     .putString(SECRET_KEY, secretKeyString)
                     .putLong(SECRET_KEY_ID, secretKey.getKeyID())
                     .apply();

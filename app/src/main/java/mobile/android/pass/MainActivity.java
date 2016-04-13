@@ -1,24 +1,20 @@
 package mobile.android.pass;
 
+import android.content.Intent;
 import android.preference.PreferenceManager;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import mobile.android.pass.api.Api;
-import mobile.android.pass.api.ApiResponse;
-import mobile.android.pass.api.ApiService;
-import mobile.android.pass.api.BaseParams;
 import mobile.android.pass.pgp.PgpHelper;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements Callback<ApiResponse> {
+public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,26 +39,24 @@ public class MainActivity extends AppCompatActivity implements Callback<ApiRespo
         } else {
             Log.d("MAIN", "KEY EXISTS");
         }
-
-        Api api = ApiService.createApiService(this);
-
-        BaseParams params = new BaseParams(pgpHelper.getPublicKeyString());
-        Call<ApiResponse> call = api.secrets(params);
-        call.enqueue(this);
     }
 
     @Override
-    public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-        if (response.isSuccess()) {
-            ApiResponse apiResponse = response.body();
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.settings_menu, menu);
+        return true;
+    }
 
-//            ((TextView) findViewById(R.id.main_text)).setText(apiResponse.decryptResponseData(this, "TheKeyPassword"));
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.settings:
+                startActivity(new Intent(this, SettingsActivity.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
-
-    }
-
-    @Override
-    public void onFailure(Call<ApiResponse> call, Throwable t) {
-
     }
 }
