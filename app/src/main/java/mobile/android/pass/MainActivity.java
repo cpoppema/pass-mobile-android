@@ -25,7 +25,6 @@ public class MainActivity extends AppCompatActivity implements Callback<ApiRespo
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
         String[] menuItems = getResources().getStringArray(R.array.menu_items);
         DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         ListView drawerList = (ListView) findViewById(R.id.left_drawer);

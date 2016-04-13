@@ -47,10 +47,12 @@ import java.util.Iterator;
 public class PgpHelper {
     private static final String PUBLIC_KEY = "public";
     private static final String SECRET_KEY = "secret";
+    private static final String SECRET_KEY_ID = "secret_id";
     private static final int KEY_PAIR_BITS = 2048;
 
     private Context mContext;
     private PGPSecretKeyRingCollection mSecretKeyCollection = null;
+    private long mSecretKeyId = -1;
 
     // Make sure BouncyCastle is set as security provider.
     static {
@@ -73,13 +75,7 @@ public class PgpHelper {
         return PreferenceManager.getDefaultSharedPreferences(mContext).getString(PUBLIC_KEY, "");
     }
 
-    /**
-     * Function to decrypt a PGP Message provided as a String.
-     * @param encryptedData PGP Message string to be decrypted.
-     * @param password Password used to unlock the SecretKey.
-     * @return
-     */
-    public String decrypt(String encryptedData, String password) {
+    public String decrypt(String encryptedData, PGPPrivateKey privateKey) {
         try {
             // Convert the String to a InputStream.
             byte[] encryptedBytes = encryptedData.getBytes(Charset.forName("UTF-8"));
@@ -91,7 +87,6 @@ public class PgpHelper {
             // Define used objects.
             PGPEncryptedDataList encryptedDataList;
             PGPPublicKeyEncryptedData publicKeyEncryptedData = null;
-            PGPPrivateKey privateKey = null;
 
             // Get first PGP Object.
             Object pgpObject = pgpObjectFactory.nextObject();
@@ -107,22 +102,23 @@ public class PgpHelper {
             // EncryptedDataObjects with the same content only encrypted with different PublicKeys.
             Iterator encryptedDataIterator = encryptedDataList.getEncryptedDataObjects();
 
+            boolean hasPrivateKeyMatch = false;
+
             // Loop all EncryptedDataObjects.
             while (encryptedDataIterator.hasNext()) {
                 // Get the EncryptedData.
                 publicKeyEncryptedData = (PGPPublicKeyEncryptedData) encryptedDataIterator.next();
                 // Get the ID of the key that needs to be used for decrypting the data.
                 long keyId = publicKeyEncryptedData.getKeyID();
-                // Try to get a PrivateKey for this keyId.
-                privateKey = getPrivateKey(keyId, password);
 
-                if (privateKey != null) {
+                if (privateKey.getKeyID() == keyId) {
+                    hasPrivateKeyMatch = true;
                     break;
                 }
             }
 
             // No PrivateKey has been found to decrypt this message.
-            if (privateKey == null) {
+            if (!hasPrivateKeyMatch) {
                 return "";
             }
 
@@ -201,6 +197,7 @@ public class PgpHelper {
             prefs.edit()
                     .putString(PUBLIC_KEY, publicKeyString)
                     .putString(SECRET_KEY, secretKeyString)
+                    .putLong(SECRET_KEY_ID, secretKey.getKeyID())
                     .apply();
 
             resetCachedValues();
@@ -237,6 +234,18 @@ public class PgpHelper {
             }
         }
         return mSecretKeyCollection;
+    }
+
+    private long getSecretKeyId() {
+        if (mSecretKeyId == -1) {
+            mSecretKeyId = PreferenceManager.getDefaultSharedPreferences(mContext)
+                    .getLong(SECRET_KEY_ID, 0);
+        }
+        return mSecretKeyId;
+    }
+
+    public PGPPrivateKey getPrivateKey(String password) {
+        return getPrivateKey(getSecretKeyId(), password);
     }
 
     /**
