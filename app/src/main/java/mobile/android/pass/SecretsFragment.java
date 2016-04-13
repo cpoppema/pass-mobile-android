@@ -66,8 +66,8 @@ public class SecretsFragment
     @Override
     public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
         if (response.isSuccess()) {
-            Type listType = new TypeToken<ArrayList<Secret>>() {}.getType();
-            List<Secret> secrets = new Gson().fromJson(response.body().decryptResponseData(getActivity(), "TheKeyPassword"), listType);
+            String decryptedJson = response.body().decryptResponseData(getActivity(), "TheKeyPassword");
+            List<Secret> secrets = JsonHelper.convertJsonToSecretList(decryptedJson);
             SecretsAdapter secretsAdapter = new SecretsAdapter(getActivity(), android.R.layout.simple_list_item_2, secrets);
             setListAdapter(secretsAdapter);
         }
