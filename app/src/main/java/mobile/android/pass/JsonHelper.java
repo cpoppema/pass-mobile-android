@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by marcov on 13-4-16.
+ * Can be removed very soon.
  */
 public class JsonHelper {
 
