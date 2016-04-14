@@ -1,4 +1,4 @@
-package mobile.android.pass;
+package mobile.android.pass.utils;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -14,6 +14,7 @@ import mobile.android.pass.pgp.PgpHelper;
  * Created by marco on 13/04/16.
  */
 public class PasswordHelper implements DialogInterface.OnClickListener {
+    private AlertDialog mAlertDialog;
     private Context mContext;
     private EditText mPasswordInput;
 
@@ -26,11 +27,7 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
         pgpHelper = new PgpHelper(mContext);
     }
 
-    public void askForPassword() {
-        askForPassword("Password");
-    }
-
-    public void askForPassword(String title) {
+    private void createPasswordDialog(String title) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(title);
 
@@ -39,14 +36,25 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
         builder.setView(mPasswordInput);
 
         builder.setPositiveButton("OK", this);
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton("DISMISS", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
             }
         });
 
-        builder.show();
+        mAlertDialog = builder.create();
+    }
+
+    public void askForPassword() {
+        askForPassword("Password");
+    }
+
+    public void askForPassword(String title) {
+        if (mAlertDialog == null || !mAlertDialog.isShowing()) {
+            createPasswordDialog(title);
+            mAlertDialog.show();
+        }
     }
 
     @Override
@@ -57,6 +65,8 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
         // Clear password from memory.
         mPasswordInput.getText().clear();
         password = null;
+
+        mAlertDialog.cancel();
 
         if (privateKey != null) {
             mCallback.onCorrectPassword(privateKey);

@@ -1,4 +1,4 @@
-package mobile.android.pass;
+package mobile.android.pass.secrets;
 
 import com.google.gson.annotations.SerializedName;
 

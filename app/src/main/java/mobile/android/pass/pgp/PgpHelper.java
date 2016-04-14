@@ -1,8 +1,6 @@
 package mobile.android.pass.pgp;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
@@ -41,18 +39,17 @@ import java.security.Security;
 import java.util.Date;
 import java.util.Iterator;
 
+import mobile.android.pass.utils.Storage;
+
 /**
  * Class for generating PGP key pairs and decrypting data.
  */
 public class PgpHelper {
-    private static final String PUBLIC_KEY = "public";
-    private static final String PUBLIC_KEY_NAME = "public_name";
-    private static final String SECRET_KEY = "secret";
-    private static final String SECRET_KEY_ID = "secret_id";
     private static final int KEY_PAIR_BITS = 2048;
 
     private Context mContext;
     private PGPSecretKeyRingCollection mSecretKeyCollection = null;
+    private Storage mStorage;
     private long mSecretKeyId = -1;
 
     // Make sure BouncyCastle is set as security provider.
@@ -66,18 +63,7 @@ public class PgpHelper {
      */
     public PgpHelper(Context context) {
         mContext = context;
-    }
-
-    /**
-     * Function to get the armored string representation of the public key.
-     * @return
-     */
-    public String getPublicKeyString() {
-        return PreferenceManager.getDefaultSharedPreferences(mContext).getString(PUBLIC_KEY, "");
-    }
-
-    public String getPublicKeyName() {
-        return PreferenceManager.getDefaultSharedPreferences(mContext).getString(PUBLIC_KEY_NAME, "");
+        mStorage = new Storage(mContext);
     }
 
     public String decrypt(String encryptedData, PGPPrivateKey privateKey) {
@@ -198,13 +184,10 @@ public class PgpHelper {
             secretArmorStream.close();
             String secretKeyString = new String(secretStream.toByteArray(), Charset.forName("UTF-8"));
 
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
-            prefs.edit()
-                    .putString(PUBLIC_KEY, publicKeyString)
-                    .putString(PUBLIC_KEY_NAME, name)
-                    .putString(SECRET_KEY, secretKeyString)
-                    .putLong(SECRET_KEY_ID, secretKey.getKeyID())
-                    .apply();
+            mStorage.setPublicKeyName(name);
+            mStorage.setPublicKey(publicKeyString);
+            mStorage.setSecretKey(secretKeyString);
+            mStorage.setSecretKeyId(secretKey.getKeyID());
 
             resetCachedValues();
         } catch (Exception e) {
@@ -227,8 +210,7 @@ public class PgpHelper {
     private PGPSecretKeyRingCollection getSecretKeyCollection() {
         if (mSecretKeyCollection == null) {
             try {
-                String privateKeyArmored = PreferenceManager.getDefaultSharedPreferences(mContext)
-                        .getString(SECRET_KEY, "");
+                String privateKeyArmored = mStorage.getSecretKey();
                 InputStream inputStream = new ByteArrayInputStream(
                         privateKeyArmored.getBytes(Charset.forName("UTF-8")));
                 inputStream = PGPUtil.getDecoderStream(inputStream);
@@ -244,8 +226,7 @@ public class PgpHelper {
 
     private long getSecretKeyId() {
         if (mSecretKeyId == -1) {
-            mSecretKeyId = PreferenceManager.getDefaultSharedPreferences(mContext)
-                    .getLong(SECRET_KEY_ID, 0);
+            mSecretKeyId = mStorage.getSecretKeyId();
         }
         return mSecretKeyId;
     }

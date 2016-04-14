@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.google.gson.GsonBuilder;
 
+import mobile.android.pass.utils.Storage;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -14,7 +15,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ApiService {
 
     public static String getApiUrl(Context context) {
-        return "http://pass.itstars.nl/";
+        return new Storage(context).getServerAddress();
     }
 
     public static Api createApiService(Context context) {

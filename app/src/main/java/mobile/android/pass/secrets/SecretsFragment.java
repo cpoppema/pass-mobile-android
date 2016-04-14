@@ -1,8 +1,9 @@
-package mobile.android.pass;
+package mobile.android.pass.secrets;
 
 import android.app.ListFragment;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,9 @@ import org.spongycastle.openpgp.PGPPrivateKey;
 
 import java.util.List;
 
+import mobile.android.pass.utils.PasswordCallback;
+import mobile.android.pass.utils.PasswordHelper;
+import mobile.android.pass.R;
 import mobile.android.pass.api.Api;
 import mobile.android.pass.api.ApiService;
 import mobile.android.pass.api.BaseParams;
@@ -19,6 +23,7 @@ import mobile.android.pass.api.SecretParams;
 import mobile.android.pass.api.SecretResponse;
 import mobile.android.pass.api.SecretsResponse;
 import mobile.android.pass.pgp.PgpHelper;
+import mobile.android.pass.utils.Storage;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -38,6 +43,7 @@ public class SecretsFragment
     private PgpHelper mPgpHelper;
     private PGPPrivateKey mPrivateKey;
     private SecretDialogHelper mSecretDialogHelper;
+    private Storage mStorage;
 
     private List<Secret> mSecrets;
     private Secret mCurrentSecret;
@@ -49,6 +55,7 @@ public class SecretsFragment
         mPasswordHelper = new PasswordHelper(getActivity(), this);
         mApi = ApiService.createApiService(getActivity());
         mSecretDialogHelper = new SecretDialogHelper(getActivity());
+        mStorage = new Storage(getActivity());
     }
 
     @Override
@@ -96,14 +103,14 @@ public class SecretsFragment
     }
 
     private void loadSecrets() {
-        BaseParams params = new BaseParams(mPgpHelper.getPublicKeyString());
+        BaseParams params = new BaseParams(mStorage.getPublicKey());
         Call<SecretsResponse> call = mApi.secrets(params);
         call.enqueue(this);
     }
 
     private void loadSecret(Secret secret) {
         mCurrentSecret = secret;
-        SecretParams params = new SecretParams(mPgpHelper.getPublicKeyString(),
+        SecretParams params = new SecretParams(mStorage.getPublicKey(),
                 secret.getUsername(), secret.getPath());
         Call<SecretResponse> call = mApi.secret(params);
         call.enqueue(this);
@@ -117,6 +124,7 @@ public class SecretsFragment
 
     @Override
     public void onIncorrectPassword() {
+        Log.d("HALLO", "INCORRECT");
         mPasswordHelper.askForPassword("Incorrect password");
     }
 

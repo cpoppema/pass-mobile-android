@@ -1,4 +1,4 @@
-package mobile.android.pass;
+package mobile.android.pass.secrets;
 
 import android.content.Context;
 import android.view.LayoutInflater;

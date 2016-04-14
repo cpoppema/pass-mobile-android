@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import mobile.android.pass.Secret;
+import mobile.android.pass.secrets.Secret;
 
 /**
  * Created by marco on 13/04/16.

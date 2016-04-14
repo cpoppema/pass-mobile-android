@@ -1,16 +1,12 @@
-package mobile.android.pass;
+package mobile.android.pass.secrets;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
-import android.text.InputType;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
+import mobile.android.pass.utils.ClipboardHelper;
 
 /**
  * Created by marcov on 14-4-16.
@@ -26,10 +22,7 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
     public void showSecretDialog(Secret secret, String password) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(secret.getDomain());
-
-        mPasswordView = new TextView(mContext);
-        mPasswordView.setText(password);
-        builder.setView(mPasswordView);
+        builder.setMessage(password);
 
         builder.setPositiveButton("COPY", this);
         builder.setNegativeButton("OK", new DialogInterface.OnClickListener() {

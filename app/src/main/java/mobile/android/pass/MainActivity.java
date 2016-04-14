@@ -1,18 +1,15 @@
 package mobile.android.pass;
 
 import android.content.Intent;
-import android.preference.PreferenceManager;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
 
-import mobile.android.pass.pgp.PgpHelper;
+import mobile.android.pass.secrets.SecretsFragment;
+import mobile.android.pass.settings.SettingsActivity;
+import mobile.android.pass.utils.Storage;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,23 +18,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String[] menuItems = getResources().getStringArray(R.array.menu_items);
-        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ListView drawerList = (ListView) findViewById(R.id.left_drawer);
-
-        drawerList.setAdapter(new ArrayAdapter<>(this, R.layout.drawer_list_item, menuItems));
-
         SecretsFragment fragment = new SecretsFragment();
-
         getFragmentManager().beginTransaction().replace(R.id.content_frame, fragment).commit();
 
-        PgpHelper pgpHelper = new PgpHelper(this);
+        Storage storage = new Storage(this);
 
-        if (!PreferenceManager.getDefaultSharedPreferences(this).contains("public")) {
-            pgpHelper.generateKeyPair("TheKeyName", "TheKeyPassword");
-            Log.d("MAIN", pgpHelper.getPublicKeyString());
-        } else {
-            Log.d("MAIN", "KEY EXISTS");
+        if (!storage.hasKeyPair()) {
+            startActivity(new Intent(this, SettingsActivity.class));
         }
     }
 

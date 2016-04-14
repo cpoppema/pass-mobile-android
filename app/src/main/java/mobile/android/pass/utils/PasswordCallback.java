@@ -1,4 +1,4 @@
-package mobile.android.pass;
+package mobile.android.pass.utils;
 
 import org.spongycastle.openpgp.PGPPrivateKey;
 

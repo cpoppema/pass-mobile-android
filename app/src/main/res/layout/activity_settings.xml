@@ -7,7 +7,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="mobile.android.pass.SettingsActivity">
+    tools:context=".settings.SettingsActivity">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -21,7 +21,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:focusableInTouchMode="true">
-
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Server address"/>
+            <EditText
+                android:id="@+id/server_address_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"/>
+            <Button
+                android:id="@+id/server_address_button"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:text="Update server address"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
