@@ -1,32 +1,23 @@
 package mobile.android.pass;
 
 import android.app.ListFragment;
-import android.content.Intent;
-import android.database.MatrixCursor;
 import android.os.Bundle;
-import android.support.v4.app.ShareCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import org.spongycastle.openpgp.PGPPrivateKey;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
 
 import mobile.android.pass.api.Api;
-import mobile.android.pass.api.ApiResponse;
 import mobile.android.pass.api.ApiService;
 import mobile.android.pass.api.BaseParams;
+import mobile.android.pass.api.SecretParams;
+import mobile.android.pass.api.SecretResponse;
+import mobile.android.pass.api.SecretsResponse;
 import mobile.android.pass.pgp.PgpHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -38,21 +29,26 @@ import retrofit2.Response;
 public class SecretsFragment
         extends ListFragment
         implements SwipeRefreshLayout.OnRefreshListener,
-        Callback<ApiResponse>,
+        Callback,
         PasswordCallback {
     private SwipeRefreshLayout mSwipeRefreshLayout;
 
+    private Api mApi;
     private PasswordHelper mPasswordHelper;
     private PgpHelper mPgpHelper;
     private PGPPrivateKey mPrivateKey;
+    private SecretDialogHelper mSecretDialogHelper;
 
     private List<Secret> mSecrets;
+    private Secret mCurrentSecret;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mPgpHelper = new PgpHelper(getActivity());
         mPasswordHelper = new PasswordHelper(getActivity(), this);
+        mApi = ApiService.createApiService(getActivity());
+        mSecretDialogHelper = new SecretDialogHelper(getActivity());
     }
 
     @Override
@@ -86,55 +82,74 @@ public class SecretsFragment
         setListAdapter(null);
         mPrivateKey = null;
         mSecrets = null;
+        mCurrentSecret = null;
     }
 
     @Override
     public void onRefresh() {
-//        loadSecrets();
-        mSwipeRefreshLayout.setRefreshing(false);
+        if (mPrivateKey != null) {
+            loadSecrets();
+        } else {
+            mSwipeRefreshLayout.setRefreshing(false);
+            mPasswordHelper.askForPassword();
+        }
     }
 
     private void loadSecrets() {
-        Api api = ApiService.createApiService(getActivity());
-
         BaseParams params = new BaseParams(mPgpHelper.getPublicKeyString());
-        Call<ApiResponse> call = api.secrets(params);
+        Call<SecretsResponse> call = mApi.secrets(params);
+        call.enqueue(this);
+    }
+
+    private void loadSecret(Secret secret) {
+        mCurrentSecret = secret;
+        SecretParams params = new SecretParams(mPgpHelper.getPublicKeyString(),
+                secret.getUsername(), secret.getPath());
+        Call<SecretResponse> call = mApi.secret(params);
         call.enqueue(this);
     }
 
     @Override
-    public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-        if (response.isSuccess()) {
-            String decryptedJson = response.body().decryptResponseData(getActivity(), mPrivateKey);
-            mSecrets = JsonHelper.convertJsonToSecretList(decryptedJson);
-            SecretsAdapter secretsAdapter = new SecretsAdapter(getActivity(), android.R.layout.simple_list_item_2, mSecrets);
-            setListAdapter(secretsAdapter);
-        }
-        mSwipeRefreshLayout.setRefreshing(false);
-    }
-
-    @Override
-    public void onFailure(Call<ApiResponse> call, Throwable t) {
-        mSwipeRefreshLayout.setRefreshing(false);
-    }
-
-    @Override
     public void onCorrectPassword(PGPPrivateKey privateKey) {
-        Log.d("SECRETS", "Correct!");
         mPrivateKey = privateKey;
-//        loadSecrets();
+        loadSecrets();
     }
 
     @Override
     public void onIncorrectPassword() {
-        Log.d("SECRETS", "Incorrect!");
+        mPasswordHelper.askForPassword("Incorrect password");
     }
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         super.onListItemClick(l, v, position, id);
-        Secret secret = mSecrets.get(position);
+        loadSecret(mSecrets.get(position));
+    }
 
-        // Show secret dialog with copy function.
+    @Override
+    public void onResponse(Call call, Response response) {
+        if (response.isSuccess()) {
+
+            Object object = response.body();
+
+            if (object instanceof SecretsResponse) {
+                mSecrets = ((SecretsResponse) object).getSecrets(getActivity(), mPrivateKey);
+                SecretsAdapter secretsAdapter = new SecretsAdapter(getActivity(),
+                        android.R.layout.simple_list_item_2, mSecrets);
+                setListAdapter(secretsAdapter);
+            } else if (object instanceof SecretResponse) {
+                String password = ((SecretResponse) object).decryptResponseData(
+                        getActivity(), mPrivateKey);
+                mSecretDialogHelper.showSecretDialog(mCurrentSecret, password);
+                mCurrentSecret = null;
+            }
+
+        }
+        mSwipeRefreshLayout.setRefreshing(false);
+    }
+
+    @Override
+    public void onFailure(Call call, Throwable t) {
+        mSwipeRefreshLayout.setRefreshing(false);
     }
 }

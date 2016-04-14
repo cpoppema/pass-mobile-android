@@ -43,19 +43,26 @@
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:weightSum="1.0">>
+                android:weightSum="1.5">>
                 <Button
                     android:id="@+id/generate_button"
                     android:layout_height="wrap_content"
                     android:layout_weight=".5"
                     android:layout_width="0dip"
-                    android:text="Generate keypair"/>
+                    android:text="Generate"/>
                 <Button
                     android:id="@+id/copy_button"
                     android:layout_height="wrap_content"
                     android:layout_weight=".5"
                     android:layout_width="0dip"
                     android:text="Copy key"/>
+                <Button
+                    android:id="@+id/show_button"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".5"
+                    android:layout_width="0dip"
+                    android:text="Show"/>
+
             </LinearLayout>
             <TextView
                 android:id="@+id/public_key"

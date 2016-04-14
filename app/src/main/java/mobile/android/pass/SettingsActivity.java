@@ -11,8 +11,7 @@ import android.widget.TextView;
 import mobile.android.pass.pgp.PgpHelper;
 
 public class SettingsActivity extends AppCompatActivity implements View.OnClickListener {
-    private Button mCopy;
-    private Button mGenerate;
+    private Button mShow;
     private EditText mKeyName;
     private EditText mPassword;
     private TextView mPublicKey;
@@ -29,14 +28,16 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
         mPgpHelper = new PgpHelper(this);
 
-        mCopy = (Button) findViewById(R.id.copy_button);
-        mGenerate = (Button) findViewById(R.id.generate_button);
+        Button copy = (Button) findViewById(R.id.copy_button);
+        Button generate = (Button) findViewById(R.id.generate_button);
+        mShow = (Button) findViewById(R.id.show_button);
         mKeyName = (EditText) findViewById(R.id.key_name_input);
         mPassword = (EditText) findViewById(R.id.password_input);
         mPublicKey = (TextView) findViewById(R.id.public_key);
 
-        mCopy.setOnClickListener(this);
-        mGenerate.setOnClickListener(this);
+        copy.setOnClickListener(this);
+        generate.setOnClickListener(this);
+        mShow.setOnClickListener(this);
 
         updateView();
     }
@@ -44,12 +45,39 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
     private void updateView() {
         mKeyName.setText(mPgpHelper.getPublicKeyName());
         mPassword.getText().clear();
-        mPublicKey.setText(mPgpHelper.getPublicKeyString());
+        mPublicKey.setText("");
+        mShow.setText("Show");
+    }
+
+    private void togglePublicKey() {
+        if (mPublicKey.getText().equals("")) {
+            mPublicKey.setText(mPgpHelper.getPublicKeyString());
+            mShow.setText("Hide");
+        } else {
+            mPublicKey.setText("");
+            mShow.setText("Show");
+        }
     }
 
     @Override
-    public void onClick(View v) {
+    public void onClick(View view) {
         // TODO generate and copy.
+        switch (view.getId()) {
+            case R.id.copy_button:
+                ClipboardHelper.addToClipboard(this, mPgpHelper.getPublicKeyString());
+                break;
+            case R.id.generate_button:
+                // TODO Popup are you sure if key exists.
+//                mPgpHelper.generateKeyPair(
+//                        mKeyName.getText().toString(),
+//                        mPassword.getText().toString()
+//                );
+//                updateView();
+                break;
+            case R.id.show_button:
+                togglePublicKey();
+                break;
+        }
     }
 
     @Override

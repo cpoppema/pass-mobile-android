@@ -27,8 +27,12 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
     }
 
     public void askForPassword() {
+        askForPassword("Password");
+    }
+
+    public void askForPassword(String title) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        builder.setTitle("Password");
+        builder.setTitle(title);
 
         mPasswordInput = new EditText(mContext);
         mPasswordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);

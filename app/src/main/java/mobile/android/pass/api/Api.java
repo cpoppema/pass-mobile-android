@@ -10,8 +10,8 @@ import retrofit2.http.POST;
 public interface Api {
 
     @POST("secrets/")
-    Call<ApiResponse> secrets(@Body BaseParams params);
+    Call<SecretsResponse> secrets(@Body BaseParams params);
 
     @POST("secret/")
-    Call<ApiResponse> secret(@Body SecretParams params);
+    Call<SecretResponse> secret(@Body SecretParams params);
 }
