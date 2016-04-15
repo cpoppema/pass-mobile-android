@@ -2,10 +2,8 @@ package mobile.android.pass.api;
 
 import com.google.gson.annotations.SerializedName;
 
-import org.spongycastle.jcajce.provider.symmetric.ARC4;
-
 /**
- * Created by marcov on 13-4-16.
+ * Parameter class for the secret api call.
  */
 public class SecretParams extends BaseParams {
 

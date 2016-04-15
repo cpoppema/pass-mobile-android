@@ -3,7 +3,6 @@ package mobile.android.pass.secrets;
 import android.app.ListFragment;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,14 +21,13 @@ import mobile.android.pass.api.BaseParams;
 import mobile.android.pass.api.SecretParams;
 import mobile.android.pass.api.SecretResponse;
 import mobile.android.pass.api.SecretsResponse;
-import mobile.android.pass.pgp.PgpHelper;
 import mobile.android.pass.utils.Storage;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * Created by marcov on 13-4-16.
+ * Fragment to show the secrets list and handle the password dialog that belongs to a secret.
  */
 public class SecretsFragment
         extends ListFragment
@@ -40,7 +38,6 @@ public class SecretsFragment
 
     private Api mApi;
     private PasswordHelper mPasswordHelper;
-    private PgpHelper mPgpHelper;
     private PGPPrivateKey mPrivateKey;
     private SecretDialogHelper mSecretDialogHelper;
     private Storage mStorage;
@@ -51,7 +48,6 @@ public class SecretsFragment
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mPgpHelper = new PgpHelper(getActivity());
         mPasswordHelper = new PasswordHelper(getActivity(), this);
         mApi = ApiService.createApiService(getActivity());
         mSecretDialogHelper = new SecretDialogHelper(getActivity());
@@ -85,11 +81,15 @@ public class SecretsFragment
         cleanUp();
     }
 
+    /**
+     * Function to clean all memory references to password and private key.
+     */
     private void cleanUp() {
         setListAdapter(null);
         mPrivateKey = null;
         mSecrets = null;
         mCurrentSecret = null;
+        mSecretDialogHelper.closeSecretDialog();
     }
 
     @Override
@@ -102,12 +102,19 @@ public class SecretsFragment
         }
     }
 
+    /**
+     * Function to fetch secrets from server.
+     */
     private void loadSecrets() {
         BaseParams params = new BaseParams(mStorage.getPublicKey());
         Call<SecretsResponse> call = mApi.secrets(params);
         call.enqueue(this);
     }
 
+    /**
+     * Function to load the password for a secret.
+     * @param secret
+     */
     private void loadSecret(Secret secret) {
         mCurrentSecret = secret;
         SecretParams params = new SecretParams(mStorage.getPublicKey(),
@@ -124,7 +131,6 @@ public class SecretsFragment
 
     @Override
     public void onIncorrectPassword() {
-        Log.d("HALLO", "INCORRECT");
         mPasswordHelper.askForPassword("Incorrect password");
     }
 

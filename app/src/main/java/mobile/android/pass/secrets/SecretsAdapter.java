@@ -10,7 +10,7 @@ import android.widget.TextView;
 import java.util.List;
 
 /**
- * Created by marcov on 13-4-16.
+ * Adapter for holding information about secrets.
  */
 public class SecretsAdapter extends ArrayAdapter<Secret> {
     private static LayoutInflater sLayoutInflater;
@@ -56,5 +56,4 @@ public class SecretsAdapter extends ArrayAdapter<Secret> {
         }
         return vi;
     }
-
 }

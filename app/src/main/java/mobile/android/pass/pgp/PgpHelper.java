@@ -66,6 +66,12 @@ public class PgpHelper {
         mStorage = new Storage(mContext);
     }
 
+    /**
+     * Function to decrypt a encrypted string with the given PrivateKey.
+     * @param encryptedData
+     * @param privateKey
+     * @return
+     */
     public String decrypt(String encryptedData, PGPPrivateKey privateKey) {
         try {
             // Convert the String to a InputStream.
@@ -224,6 +230,10 @@ public class PgpHelper {
         return mSecretKeyCollection;
     }
 
+    /**
+     * Function to get the secret key id from storage.
+     * @return
+     */
     private long getSecretKeyId() {
         if (mSecretKeyId == -1) {
             mSecretKeyId = mStorage.getSecretKeyId();
@@ -231,6 +241,11 @@ public class PgpHelper {
         return mSecretKeyId;
     }
 
+    /**
+     * Function to get a PrivateKey for the given password.
+     * @param password
+     * @return
+     */
     public PGPPrivateKey getPrivateKey(String password) {
         return getPrivateKey(getSecretKeyId(), password);
     }

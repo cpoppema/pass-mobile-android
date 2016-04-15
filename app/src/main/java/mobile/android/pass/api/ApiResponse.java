@@ -9,7 +9,7 @@ import org.spongycastle.openpgp.PGPPrivateKey;
 import mobile.android.pass.pgp.PgpHelper;
 
 /**
- * Class that stores the encrypted data of the api response and provides a decrypt option.
+ * Base reponse object for api requests that return encrypted data.
  */
 public class ApiResponse {
 

@@ -9,11 +9,11 @@ import android.widget.Toast;
 import mobile.android.pass.utils.ClipboardHelper;
 
 /**
- * Created by marcov on 14-4-16.
+ * Helper for showing the dialog that contains the password.
  */
 public class SecretDialogHelper implements DialogInterface.OnClickListener {
     private Context mContext;
-    private TextView mPasswordView;
+    private AlertDialog mAlertDialog;
 
     public SecretDialogHelper(Context context) {
         mContext = context;
@@ -32,12 +32,22 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
             }
         });
 
-        builder.show();
+        mAlertDialog = builder.show();
+    }
+
+    /**
+     * Function to close an already active secret dialog.
+     */
+    public void closeSecretDialog() {
+        if (mAlertDialog != null) {
+            mAlertDialog.cancel();
+        }
     }
 
     @Override
     public void onClick(DialogInterface dialog, int which) {
-        ClipboardHelper.addToClipboard(mContext, mPasswordView.getText().toString());
+        ClipboardHelper.addToClipboard(mContext,
+                ((TextView) mAlertDialog.findViewById(android.R.id.message)).getText().toString());
         Toast.makeText(mContext, "Password copied to clipboard", Toast.LENGTH_SHORT).show();
     }
 }

@@ -5,33 +5,61 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 /**
- * Created by marcov on 14-4-16.
+ * Class that acts as middleware between a storage engine and the app.
  */
 public class Storage implements StorageKeys {
     private Context mContext;
     private SharedPreferences mSharedPreferences;
 
+    /**
+     * Constructor.
+     * @param context
+     */
     public Storage(Context context) {
         mContext = context;
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
     }
 
+    /**
+     * Function to put a string in the used storage engine.
+     * @param key
+     * @param value
+     */
     private void putString(String key, String value) {
         mSharedPreferences.edit().putString(key, value).apply();
     }
 
+    /**
+     * Function to get a string from the storage for a given key.
+     * @param key
+     * @return
+     */
     private String getString(String key) {
        return mSharedPreferences.getString(key, "");
     }
 
+    /**
+     * Function to put a long in the used storage engine.
+     * @param key
+     * @param value
+     */
     private void putLong(String key, long value) {
         mSharedPreferences.edit().putLong(key, value).apply();
     }
 
+    /**
+     * Function to get a long from the storage for a given key.
+     * @param key
+     * @return
+     */
     private long getLong(String key) {
         return mSharedPreferences.getLong(key, 0);
     }
 
+    /**
+     * Function to check if a keypair is present in the storage.
+     * @return
+     */
     public boolean hasKeyPair() {
         return mSharedPreferences.contains(PUBLIC_KEY) && mSharedPreferences.contains(SECRET_KEY);
     }

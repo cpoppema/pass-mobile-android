@@ -5,7 +5,7 @@ import retrofit2.http.Body;
 import retrofit2.http.POST;
 
 /**
- * Created by marcov on 13-4-16.
+ * Api endpoints.
  */
 public interface Api {
 

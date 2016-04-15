@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
 
         Storage storage = new Storage(this);
 
+        // Redirect to settings if no keys present.
         if (!storage.hasKeyPair()) {
             startActivity(new Intent(this, SettingsActivity.class));
         }
@@ -37,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle item selection
         switch (item.getItemId()) {
             case R.id.settings:
                 startActivity(new Intent(this, SettingsActivity.class));

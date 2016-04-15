@@ -14,15 +14,26 @@ import java.util.List;
 import mobile.android.pass.secrets.Secret;
 
 /**
- * Created by marco on 13/04/16.
+ * Response class for the secrets endpoint.
  */
 public class SecretsResponse extends ApiResponse {
 
+    /**
+     * Function to convert Json to a list of objects.
+     * @param secretsJson
+     * @return
+     */
     private List<Secret> convertJsonToSecretList(String secretsJson) {
         Type listType = new TypeToken<ArrayList<Secret>>() {}.getType();
         return new Gson().fromJson(secretsJson, listType);
     }
 
+    /**
+     * Function to return the response in a list of Secret objects.
+     * @param context
+     * @param privateKey
+     * @return
+     */
     public List<Secret> getSecrets(Context context, PGPPrivateKey privateKey) {
         String secretsJson = decryptResponseData(context, privateKey);
 

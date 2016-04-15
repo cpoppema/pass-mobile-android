@@ -1,13 +1,9 @@
 package mobile.android.pass.api;
 
-import android.util.Base64;
-
 import com.google.gson.annotations.SerializedName;
 
-import java.security.PublicKey;
-
 /**
- * Created by marcov on 13-4-16.
+ * Params class for the basics required in every request.
  */
 public class BaseParams {
 

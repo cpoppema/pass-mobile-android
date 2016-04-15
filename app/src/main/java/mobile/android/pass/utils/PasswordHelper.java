@@ -11,7 +11,7 @@ import org.spongycastle.openpgp.PGPPrivateKey;
 import mobile.android.pass.pgp.PgpHelper;
 
 /**
- * Created by marco on 13/04/16.
+ * Class used for the password dialog process.
  */
 public class PasswordHelper implements DialogInterface.OnClickListener {
     private AlertDialog mAlertDialog;
@@ -21,12 +21,22 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
     private PasswordCallback mCallback;
     private PgpHelper pgpHelper;
 
+    /**
+     * Constructor
+     * @param context
+     * @param passwordCallback Class that holds the functions to perform callbacks on.
+     */
     public PasswordHelper(Context context, PasswordCallback passwordCallback) {
         mContext = context;
         mCallback = passwordCallback;
         pgpHelper = new PgpHelper(mContext);
     }
 
+    /**
+     * Function to create a dialog that prompts for the password. This function does not invoke
+     * show but only creates a AlertDialog object.
+     * @param title Title of the dialog.
+     */
     private void createPasswordDialog(String title) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(title);
@@ -46,10 +56,17 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
         mAlertDialog = builder.create();
     }
 
+    /**
+     * Function that shows the password dialog with title `password`.
+     */
     public void askForPassword() {
         askForPassword("Password");
     }
 
+    /**
+     * Function that shows the password dialog with the given title.
+     * @param title
+     */
     public void askForPassword(String title) {
         if (mAlertDialog == null || !mAlertDialog.isShowing()) {
             createPasswordDialog(title);
@@ -68,6 +85,7 @@ public class PasswordHelper implements DialogInterface.OnClickListener {
 
         mAlertDialog.cancel();
 
+        // When null that password was incorrect.
         if (privateKey != null) {
             mCallback.onCorrectPassword(privateKey);
         } else {

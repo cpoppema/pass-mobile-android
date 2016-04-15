@@ -10,14 +10,25 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
- * Created by marcov on 13-4-16.
+ * Function to create a api service to call the endpoints in api.
  */
 public class ApiService {
 
     public static String getApiUrl(Context context) {
-        return new Storage(context).getServerAddress();
+
+        String url = new Storage(context).getServerAddress();
+
+        if (url.equals("")) {
+            url = "http://localhost";
+        }
+        return url;
     }
 
+    /**
+     * Create a api service for the url stored in the storage.
+     * @param context
+     * @return
+     */
     public static Api createApiService(Context context) {
         Retrofit.Builder builder = new Retrofit.Builder();
 

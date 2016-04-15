@@ -3,7 +3,7 @@ package mobile.android.pass.secrets;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * Created by marcov on 13-4-16.
+ * Class used in GSON parse to convert JSON data to this object.
  */
 public class Secret {
 

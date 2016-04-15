@@ -7,10 +7,15 @@ import android.content.Context;
 import mobile.android.pass.R;
 
 /**
- * Created by marcov on 14-4-16.
+ * Helper for using the clipboard.
  */
 public class ClipboardHelper {
 
+    /**
+     * Function to add text to the clipboard with the app name as key.
+     * @param context
+     * @param text
+     */
     public static void addToClipboard(Context context, String text) {
         ClipboardManager clipboard = (ClipboardManager)
                 context.getSystemService(Context.CLIPBOARD_SERVICE);

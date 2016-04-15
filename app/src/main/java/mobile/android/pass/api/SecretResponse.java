@@ -1,7 +1,7 @@
 package mobile.android.pass.api;
 
 /**
- * Created by marco on 13/04/16.
+ * Response class for the secret endpoint.
  */
 public class SecretResponse extends ApiResponse {
 }

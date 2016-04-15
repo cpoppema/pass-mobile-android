@@ -1,7 +1,7 @@
 package mobile.android.pass.utils;
 
 /**
- * Created by marcov on 14-4-16.
+ * Interface for holding the keys used for storing information.
  */
 public interface StorageKeys {
     String PUBLIC_KEY = "public";

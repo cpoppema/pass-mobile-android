@@ -1,6 +1,7 @@
 package mobile.android.pass.settings;
 
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,11 +18,15 @@ import mobile.android.pass.pgp.PgpHelper;
 import mobile.android.pass.utils.ClipboardHelper;
 import mobile.android.pass.utils.Storage;
 
+/**
+ * Activity that shows the settings page.
+ */
 public class SettingsActivity extends AppCompatActivity implements View.OnClickListener {
     private Button mShow;
     private EditText mKeyName;
     private EditText mPassword;
     private EditText mServerAddress;
+    private ProgressBar mSpinner;
     private TextView mPublicKey;
 
     private PgpHelper mPgpHelper;
@@ -31,12 +37,21 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
+        // Set the back button on the settings page.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
         mPgpHelper = new PgpHelper(this);
         mStorage = new Storage(this);
 
+        initViewsAndListeners();
+        updateView();
+    }
+
+    /**
+     * Function to get all views and init click listeners on the buttons.
+     */
+    private void initViewsAndListeners() {
         Button copy = (Button) findViewById(R.id.copy_button);
         Button generate = (Button) findViewById(R.id.generate_button);
         Button updateServer = (Button) findViewById(R.id.server_address_button);
@@ -45,56 +60,65 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         mPassword = (EditText) findViewById(R.id.password_input);
         mServerAddress = (EditText) findViewById(R.id.server_address_input);
         mPublicKey = (TextView) findViewById(R.id.public_key);
+        mSpinner = (ProgressBar) findViewById(R.id.spinner);
+        mSpinner.setVisibility(View.GONE);
 
         copy.setOnClickListener(this);
         generate.setOnClickListener(this);
         updateServer.setOnClickListener(this);
         mShow.setOnClickListener(this);
-
-        updateView();
     }
 
+    /**
+     * Function to update the view to reflect data changes.
+     */
     private void updateView() {
         mServerAddress.setText(mStorage.getServerAddress());
         mKeyName.setText(mStorage.getPublicKeyName());
         mPassword.getText().clear();
-        mPublicKey.setText("");
+        mPublicKey.setVisibility(View.GONE);
+        mPublicKey.setText(mStorage.getPublicKey());
         mShow.setText("Show");
     }
 
+    /**
+     * Function to toggle the view of the public key.
+     */
     private void togglePublicKey() {
-        if (mPublicKey.getText().equals("")) {
-            mPublicKey.setText(mStorage.getPublicKey());
-            mShow.setText("Hide");
-        } else {
-            mPublicKey.setText("");
-            mShow.setText("Show");
-        }
+        mShow.setText(mPublicKey.getVisibility() == View.VISIBLE ? "Hide" : "show");
+        mPublicKey.setVisibility(mPublicKey.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
     }
 
     @Override
     public void onClick(View view) {
-        // TODO generate and copy.
         switch (view.getId()) {
             case R.id.copy_button:
                 ClipboardHelper.addToClipboard(this, mStorage.getPublicKey());
-                Toast.makeText(this, "Password copied to clipboard", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Public key copied to clipboard", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.generate_button:
-                // TODO Popup are you sure if key exists.
+                // Show confirmation dialog when a keypair exist because it will be overridden.
                 if (mStorage.hasKeyPair()) {
                     showConfirmationDialog();
+                } else {
+                    new generateKeyPairTask().execute(mKeyName.getText().toString(),
+                            mPassword.getText().toString());
                 }
                 break;
             case R.id.show_button:
                 togglePublicKey();
                 break;
             case R.id.server_address_button:
+                // TODO Feedback on server address sanity.
                 mStorage.setServerAddress(mServerAddress.getText().toString());
+                Toast.makeText(this, "Server address updated", Toast.LENGTH_SHORT).show();
                 break;
         }
     }
 
+    /**
+     * Function to show a confirmation dialog for generating a new keypair.
+     */
     private void showConfirmationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Caution!");
@@ -104,12 +128,8 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         builder.setPositiveButton("Yes, override", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                mPgpHelper.generateKeyPair(
-                        mKeyName.getText().toString(),
-                        mPassword.getText().toString()
-                );
-                updateView();
-                Toast.makeText(SettingsActivity.this, "New keypair generated", Toast.LENGTH_SHORT).show();
+                new generateKeyPairTask().execute(mKeyName.getText().toString(),
+                        mPassword.getText().toString());
             }
         });
         builder.setNegativeButton("No, back to safety", new DialogInterface.OnClickListener() {
@@ -126,5 +146,40 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         finish();
         return true;
+    }
+
+    private class generateKeyPairTask extends AsyncTask<String, Void, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mSpinner.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+            String keyName = params[0];
+            String password = params[1];
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+//            mPgpHelper.generateKeyPair(keyName, password);
+
+            keyName = null;
+            password = null;
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            mSpinner.setVisibility(View.GONE);
+            updateView();
+            Toast.makeText(SettingsActivity.this, "New keypair generated", Toast.LENGTH_SHORT).show();
+        }
     }
 }
