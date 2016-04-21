@@ -1,5 +1,6 @@
 package mobile.android.pass.settings;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.support.v7.app.AlertDialog;
@@ -9,7 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,7 +26,7 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
     private EditText mKeyName;
     private EditText mPassword;
     private EditText mServerAddress;
-    private ProgressBar mSpinner;
+    private ProgressDialog mProgressDialog;
     private TextView mPublicKey;
 
     private PgpHelper mPgpHelper;
@@ -60,8 +60,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         mPassword = (EditText) findViewById(R.id.password_input);
         mServerAddress = (EditText) findViewById(R.id.server_address_input);
         mPublicKey = (TextView) findViewById(R.id.public_key);
-        mSpinner = (ProgressBar) findViewById(R.id.spinner);
-        mSpinner.setVisibility(View.GONE);
 
         copy.setOnClickListener(this);
         generate.setOnClickListener(this);
@@ -148,12 +146,23 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         return true;
     }
 
+    /**
+     * Function to setup the progress dialog for creating a key pair.
+     */
+    private void createProgressDialog() {
+        mProgressDialog = new ProgressDialog(this);
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setMessage("Generating key pair");
+        mProgressDialog.create();
+    }
+
     private class generateKeyPairTask extends AsyncTask<String, Void, Void> {
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mSpinner.setVisibility(View.VISIBLE);
+            createProgressDialog();
+            mProgressDialog.show();
         }
 
         @Override
@@ -166,7 +175,7 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-//            mPgpHelper.generateKeyPair(keyName, password);
+            mPgpHelper.generateKeyPair(keyName, password);
 
             keyName = null;
             password = null;
@@ -177,9 +186,11 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            mSpinner.setVisibility(View.GONE);
+            mProgressDialog.cancel();
             updateView();
             Toast.makeText(SettingsActivity.this, "New keypair generated", Toast.LENGTH_SHORT).show();
         }
     }
+
+
 }
