@@ -1,6 +1,43 @@
 <resources>
+    <!-- App/MainActivity's title -->
     <string name="app_name">Pass</string>
+
+    <!-- SettingActivity's title -->
     <string name="action_settings">Settings</string>
-    <string name="drawer_open">Open</string>
-    <string name="drawer_close">Close</string>
+
+    <!-- SettingsActivity's Preferences -->
+
+    <string name="pref_server_title">Server settings</string>
+
+    <string name="pref_key_server">server</string>
+    <string name="pref_title_server">Remote server</string>
+    <string name="pref_dialog_title_server">Server address</string>
+
+    <string name="pref_keypair_title">Key settings</string>
+
+    <string name="pref_key_key_name">key_name</string>
+    <string name="pref_title_key_name">Key name</string>
+    <string name="pref_dialog_title_key_name">Key name</string>
+
+    <string name="pref_key_public_key">public_key</string>
+    <string name="pref_title_public_key">Key</string>
+    <string name="pref_dialog_title_public_key">Key dialog</string>
+    <string name="pref_summary_public_key">Create key</string>
+
+    <string name="pref_key_private_key">private_key</string>
+
+    <!-- UnlockFragment -->
+    <string name="secrets_dialog_title_unlock">Passphrase</string>
+    <string name="secrets_invalid_passphrase">Invalid passphrase</string>
+    <string name="secrets_button_unlock">UNLOCK</string>
+
+    <!-- Menu item title to open SettingsActivity -->
+    <string name="menu_settings">Settings</string>
+
+    <!-- Passphrase dialog -->
+    <string name="unlock_button">UNLOCK</string>
+    <string name="unlock_invalid">Invalid passphrase</string>
+    <string name="unlock_title">Passphrase</string>
+
+    <string name="title_activity_secrets">SecretsActivity</string>
 </resources>

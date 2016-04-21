@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="menu_items">
-        <item>Public Key</item>
-        <item>Settings</item>
-        <item>Whatnot</item>
+    <string-array name="pref_public_key_entries">
+        <item>Copy key</item>
+        <item>Copy key ID</item>
+        <item>Show key</item>
+        <item>Create key</item>
+    </string-array>
+
+    <string-array name="pref_public_key_entry_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
     </string-array>
 </resources>
