@@ -9,6 +9,7 @@ import android.view.View;
 
 import mobile.android.pass.R;
 
+// TODO: https://github.com/codepath/android_guides/wiki/Using-an-ArrayAdapter-with-ListView
 public class SecretsActivity extends AppCompatActivity {
 
     @Override

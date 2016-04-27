@@ -27,7 +27,10 @@
         <activity
             android:name=".secrets.SecretsActivity"
             android:label="@string/title_activity_secrets"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".settings.CreateKeyActivity"
+            android:label="@string/title_activity_create_key" />
     </application>
 
 </manifest>

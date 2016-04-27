@@ -6,6 +6,7 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +16,7 @@ import android.widget.EditText;
 
 import mobile.android.pass.R;
 
-
+// TODO: https://github.com/codepath/android_guides/wiki/Using-DialogFragment
 public class UnlockFragment extends DialogFragment {
 
     private EditText mPassphraseInput;
@@ -58,6 +59,7 @@ public class UnlockFragment extends DialogFragment {
                         String passphrase = mPassphraseInput.getText().toString();
                         if (!passphrase.isEmpty()) {
                             // TODO: test passphrase
+                            Log.i("pass", "testing passphrase");
                         }
 
                         // When null the passphrase was invalid.
@@ -65,6 +67,9 @@ public class UnlockFragment extends DialogFragment {
                             // Give feedback.
                             mPassphraseInput.setError(getString(R.string.secrets_invalid_passphrase));
                         } else {
+                            // Reset error.
+                            mPassphraseInput.setError(null);
+
                             // Clear password from memory.
                             mPassphraseInput.getText().clear();
 

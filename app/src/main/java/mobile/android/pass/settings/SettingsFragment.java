@@ -11,7 +11,7 @@ import mobile.android.pass.R;
 
 public class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    public String KEY_PREF_PUBLIC_KEY;
+    private String PREF_KEY_PUBLIC_KEY = "pref_key_public_key";
 
     public SettingsFragment() {
         // Required empty public constructor
@@ -20,7 +20,6 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.KEY_PREF_PUBLIC_KEY = getString(R.string.pref_key_public_key);
 
         // Load the preferences from an XML resource.
         addPreferencesFromResource(R.xml.activity_settings);
@@ -53,16 +52,16 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     }
 
     private void setSummary(Preference preference, String key) {
-        if(key == null) {
+        if(key == null || preference == null) {
             return;
         }
 
         String summary;
         SharedPreferences sharedPreferences = getPreferenceManager().getSharedPreferences();
 
-        if (key.equals(KEY_PREF_PUBLIC_KEY)) {
+        if (key.equals(PREF_KEY_PUBLIC_KEY)) {
             // Calculate key id.
-            String publicKey = sharedPreferences.getString(KEY_PREF_PUBLIC_KEY, "");
+            String publicKey = sharedPreferences.getString(PREF_KEY_PUBLIC_KEY, "");
             if (!publicKey.isEmpty()) {
                 summary = "SAMPLEPUBLICKEYID";
             } else {

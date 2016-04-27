@@ -44,5 +44,13 @@
     <string name="unlock_invalid">Invalid passphrase</string>
     <string name="unlock_title">Passphrase</string>
 
-    <string name="title_activity_secrets">SecretsActivity</string>
+    <!-- SecretsActivity -->
+    <string name="title_activity_secrets">Secrets</string>
+
+    <!-- CreateKeyActivity -->
+    <string name="title_activity_create_key">Create key</string>
+    <string name="prompt_key_name">Key name</string>
+    <string name="prompt_passphrase">Passphrase</string>
+    <string name="action_create_key">Create key</string>
+    <string name="error_field_required">This field is required</string>
 </resources>
