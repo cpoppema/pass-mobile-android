@@ -9,6 +9,5 @@
         android:layout_height="wrap_content"
         android:id="@+id/publicKeyActions"
         android:layout_gravity="center_horizontal"
-        android:entries="@array/pref_public_key_entries"
-        android:entryValues="@array/pref_public_key_entry_values" />
+        android:entries="@array/pref_public_key_actions" />
 </LinearLayout>

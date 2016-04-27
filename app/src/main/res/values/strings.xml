@@ -24,6 +24,11 @@
     <string name="pref_dialog_title_public_key">Key dialog</string>
     <string name="pref_summary_public_key">Create key</string>
 
+    <string name="pref_public_key_action_copy">Copy key</string>
+    <string name="pref_public_key_action_copy_id">Copy key ID</string>
+    <string name="pref_public_key_action_show">Show key</string>
+    <string name="pref_public_key_action_create">Create key</string>
+
     <string name="pref_key_private_key">private_key</string>
 
     <!-- UnlockFragment -->
