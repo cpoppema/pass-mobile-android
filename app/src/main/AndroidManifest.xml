@@ -26,8 +26,8 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".secrets.SecretsActivity"
-            android:label="@string/title_activity_secrets"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".settings.GenerateKeyActivity"
             android:configChanges="orientation|keyboardHidden"

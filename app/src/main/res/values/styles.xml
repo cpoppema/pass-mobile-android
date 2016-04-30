@@ -23,6 +23,7 @@
 
         <!-- Status bar background color -->
         <item name="colorPrimaryDark">@color/primary_dark</item>
+
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />

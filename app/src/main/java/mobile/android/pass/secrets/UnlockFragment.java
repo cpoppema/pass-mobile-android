@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -60,6 +61,7 @@ public class UnlockFragment extends DialogFragment {
                         if (!passphrase.isEmpty()) {
                             // TODO: test passphrase
                             Log.i("pass", "testing passphrase");
+                            privateKey = true;
                         }
 
                         // When null the passphrase was invalid.
@@ -75,6 +77,7 @@ public class UnlockFragment extends DialogFragment {
 
                             // Move on.
                             dialog.cancel();
+                            startActivity(new Intent(getActivity(), SecretsActivity.class));
                         }
                     }
                 });
