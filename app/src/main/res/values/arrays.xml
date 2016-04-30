@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string-array name="pref_public_key_actions">
-        <item>@string/pref_public_key_action_copy</item>
-        <item>@string/pref_public_key_action_copy_id</item>
-        <item>@string/pref_public_key_action_show</item>
-        <item>@string/pref_public_key_action_create</item>
-    </string-array>
-</resources>

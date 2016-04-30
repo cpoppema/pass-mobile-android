@@ -6,30 +6,23 @@
     <string name="action_settings">Settings</string>
 
     <!-- SettingsActivity's Preferences -->
+    <string name="action_generate_key">Generate key</string>
 
-    <string name="pref_server_title">Server settings</string>
+    <string name="pref_group_title_server">Server settings</string>
 
-    <string name="pref_key_server">server</string>
     <string name="pref_title_server">Remote server</string>
     <string name="pref_dialog_title_server">Server address</string>
 
-    <string name="pref_keypair_title">Key settings</string>
+    <string name="pref_group_title_key">Key settings</string>
 
-    <string name="pref_key_key_name">key_name</string>
     <string name="pref_title_key_name">Key name</string>
-    <string name="pref_dialog_title_key_name">Key name</string>
 
-    <string name="pref_key_public_key">public_key</string>
     <string name="pref_title_public_key">Key</string>
-    <string name="pref_dialog_title_public_key">Key dialog</string>
-    <string name="pref_summary_public_key">Create key</string>
+    <string name="pref_summary_public_key">No key installed</string>
 
     <string name="pref_public_key_action_copy">Copy key</string>
     <string name="pref_public_key_action_copy_id">Copy key ID</string>
     <string name="pref_public_key_action_show">Show key</string>
-    <string name="pref_public_key_action_create">Create key</string>
-
-    <string name="pref_key_private_key">private_key</string>
 
     <!-- UnlockFragment -->
     <string name="secrets_dialog_title_unlock">Passphrase</string>
@@ -47,10 +40,12 @@
     <!-- SecretsActivity -->
     <string name="title_activity_secrets">Secrets</string>
 
-    <!-- CreateKeyActivity -->
-    <string name="title_activity_create_key">Create key</string>
+    <!-- GenerateKeyActivity -->
     <string name="prompt_key_name">Key name</string>
     <string name="prompt_passphrase">Passphrase</string>
-    <string name="action_create_key">Create key</string>
+    <string name="action_create_key">GENERATE</string>
+
     <string name="error_field_required">This field is required</string>
+
+    <string name="progress_generating_key">Generating key</string>
 </resources>
