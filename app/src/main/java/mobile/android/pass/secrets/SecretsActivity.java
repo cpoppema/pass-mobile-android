@@ -5,8 +5,10 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.ListPopupWindow;
 import android.support.v7.widget.PopupMenu;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -30,6 +32,8 @@ public class SecretsActivity extends AppCompatActivity implements AdapterView.On
 
     SwipeRefreshLayout mSwipeRefreshLayout;
     SecretsAdapter mSecretsAdapter;
+//    ListView mListView;
+    RecyclerView mListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,9 +50,11 @@ public class SecretsActivity extends AppCompatActivity implements AdapterView.On
         mSecretsAdapter = new SecretsAdapter(this, arrayOfSecrets);
 
         // Attach the adapter to a ListView.
-        ListView listView = (ListView) findViewById(R.id.list_secrets);
-        listView.setAdapter(mSecretsAdapter);
-        listView.setOnItemClickListener(this);
+//        mListView = (ListView) findViewById(R.id.list_secrets);
+//        mListView.setOnItemClickListener(this);
+        mListView = (RecyclerView) findViewById(R.id.list_secrets);
+        mListView.setAdapter(mSecretsAdapter);
+        mListView.setLayoutManager(new LinearLayoutManager(this));
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_secrets);
         mSwipeRefreshLayout.setOnRefreshListener(this);
@@ -445,7 +451,8 @@ public class SecretsActivity extends AppCompatActivity implements AdapterView.On
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mSecretsAdapter.addAll(secrets);
+                        mSecretsAdapter = new SecretsAdapter(SecretsActivity.this, secrets);
+                        mListView.setAdapter(mSecretsAdapter);
                     }
                 });
             }
