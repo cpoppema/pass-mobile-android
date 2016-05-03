@@ -17,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
-import android.widget.ListView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,12 +27,11 @@ import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
 
 // TODO: https://github.com/codepath/android_guides/wiki/Using-an-ArrayAdapter-with-ListView
-public class SecretsActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener {
+public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     SwipeRefreshLayout mSwipeRefreshLayout;
     SecretsAdapter mSecretsAdapter;
-//    ListView mListView;
-    RecyclerView mListView;
+    RecyclerView mRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,12 +47,10 @@ public class SecretsActivity extends AppCompatActivity implements AdapterView.On
         // Create the adapter to convert the array to views.
         mSecretsAdapter = new SecretsAdapter(this, arrayOfSecrets);
 
-        // Attach the adapter to a ListView.
-//        mListView = (ListView) findViewById(R.id.list_secrets);
-//        mListView.setOnItemClickListener(this);
-        mListView = (RecyclerView) findViewById(R.id.list_secrets);
-        mListView.setAdapter(mSecretsAdapter);
-        mListView.setLayoutManager(new LinearLayoutManager(this));
+        // Attach the adapter to a RecyclerView.
+        mRecyclerView = (RecyclerView) findViewById(R.id.list_secrets);
+        mRecyclerView.setAdapter(mSecretsAdapter);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_secrets);
         mSwipeRefreshLayout.setOnRefreshListener(this);
@@ -82,40 +78,10 @@ public class SecretsActivity extends AppCompatActivity implements AdapterView.On
     }
 
     @Override
-    public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-        Secret secret = (Secret)adapterView.getItemAtPosition(position);
-
-        // Anchor menu to button.
-        ImageView button = (ImageView)view.findViewById(R.id.item_secret_actions);
-        PopupMenu popupMenu = new PopupMenu(this, button);
-
-        // Inflating the Popup using xml file.
-        popupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, popupMenu.getMenu());
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            public boolean onMenuItemClick(MenuItem item) {
-                Log.i("pass", "Clicked on " + item.getTitle());
-                return true;
-            }
-        });
-
-        // Show menu.
-        popupMenu.show();
-
-        // Position menu over button.
-        ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) popupMenu.getDragToOpenListener();
-        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) button.getLayoutParams();
-        listener.getPopup().setVerticalOffset(-button.getHeight()-lp.topMargin);
-
-        // Redraw on the new position.
-        listener.getPopup().show();
-    }
-
-    @Override
     public void onRefresh() {
         RetrieveSecretsTask retrieveSecretsTask = new RetrieveSecretsTask();
         retrieveSecretsTask.execute((Void) null);
     }
-
 
     public class RetrieveSecretsTask extends AsyncTask<Void, Void, Boolean> {
 
@@ -452,7 +418,7 @@ public class SecretsActivity extends AppCompatActivity implements AdapterView.On
                     @Override
                     public void run() {
                         mSecretsAdapter = new SecretsAdapter(SecretsActivity.this, secrets);
-                        mListView.setAdapter(mSecretsAdapter);
+                        mRecyclerView.setAdapter(mSecretsAdapter);
                     }
                 });
             }

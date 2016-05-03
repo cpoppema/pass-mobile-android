@@ -1,6 +1,13 @@
 package mobile.android.pass.secrets;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.support.v7.widget.ListPopupWindow;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
@@ -28,11 +35,21 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
         mFilteredList = secrets;
     }
 
-
     @Override
     public SecretViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_secret, parent, false);
         SecretViewHolder holder = new SecretViewHolder(view);
+
+        // Convert to a circular ImageView.
+        ImageView icon = holder.getIcon();
+        int backgroundColor = ((ColorDrawable) icon.getBackground()).getColor();
+        Context context = icon.getContext();
+        Bitmap bitmap = Bitmap.createBitmap(icon.getLayoutParams().width, icon.getLayoutParams().height, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(backgroundColor);
+        RoundedBitmapDrawable drawable = RoundedBitmapDrawableFactory.create(context.getResources(), bitmap);
+        drawable.setCircular(true);
+        icon.setBackground(drawable);
+
         return holder;
     }
 
@@ -54,6 +71,7 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
 
     public static class SecretViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, PopupMenu.OnMenuItemClickListener {
         private ImageView mIcon;
+        private TextView mIconText;
         private TextView mDomain;
         private TextView mUsername;
         private ImageView mActions;
@@ -62,6 +80,7 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
             super(v); // done this way instead of view tagging
 
             mIcon = (ImageView) v.findViewById(R.id.item_secret_icon);
+            mIconText = (TextView) v.findViewById(R.id.item_secret_icon_text);
             mDomain = (TextView) v.findViewById(R.id.item_secret_domain);
             mUsername = (TextView) v.findViewById(R.id.item_secret_username);
             mActions = (ImageView) v.findViewById(R.id.item_secret_actions);
@@ -69,8 +88,13 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
             mActions.setOnClickListener(this);
         }
 
+        public ImageView getIcon() {
+            return mIcon;
+        }
+
         public void setDomain(String domain) {
             mDomain.setText(domain);
+            mIconText.setText(Character.toString(domain.charAt(0)));
         }
 
         public void setUsername(String username) {
