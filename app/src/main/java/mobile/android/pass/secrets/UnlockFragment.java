@@ -17,7 +17,6 @@ import android.widget.EditText;
 
 import mobile.android.pass.R;
 
-// TODO: https://github.com/codepath/android_guides/wiki/Using-DialogFragment
 public class UnlockFragment extends DialogFragment {
 
     private EditText mPassphraseInput;

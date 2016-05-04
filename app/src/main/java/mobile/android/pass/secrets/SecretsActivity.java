@@ -6,17 +6,10 @@ import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.ListPopupWindow;
-import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ImageView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,7 +19,6 @@ import java.util.ArrayList;
 import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
 
-// TODO: https://github.com/codepath/android_guides/wiki/Using-an-ArrayAdapter-with-ListView
 public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     SwipeRefreshLayout mSwipeRefreshLayout;
@@ -48,11 +40,14 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSecretsAdapter = new SecretsAdapter(this, arrayOfSecrets);
 
         // Attach the adapter to a RecyclerView.
-        mRecyclerView = (RecyclerView) findViewById(R.id.list_secrets);
+        mRecyclerView = (RecyclerView) findViewById(R.id.recycle_view_secrets);
         mRecyclerView.setAdapter(mSecretsAdapter);
+        mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        // Setup the SwipeRefreshLayout.
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_secrets);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
     }
 

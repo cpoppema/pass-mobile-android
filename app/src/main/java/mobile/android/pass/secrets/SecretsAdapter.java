@@ -2,10 +2,7 @@ package mobile.android.pass.secrets;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.support.v7.widget.ListPopupWindow;
@@ -58,6 +55,13 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
         Secret secret = mFilteredList.get(position);
         holder.setDomain(secret.getDomain());
         holder.setUsername(secret.getUsername());
+
+        // Hide divider for the last item.
+        if (position == (mFilteredList.size() - 1)) {
+            holder.getDivider().setVisibility(View.INVISIBLE);
+        } else {
+            holder.getDivider().setVisibility(View.VISIBLE);
+        }
     }
 
     public long getItemId(int position) {
@@ -74,7 +78,8 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
         private TextView mIconText;
         private TextView mDomain;
         private TextView mUsername;
-        private ImageView mActions;
+        private View mActions;
+        private ImageView mDivider;
 
         public SecretViewHolder(View v) {
             super(v); // done this way instead of view tagging
@@ -83,9 +88,14 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
             mIconText = (TextView) v.findViewById(R.id.item_secret_icon_text);
             mDomain = (TextView) v.findViewById(R.id.item_secret_domain);
             mUsername = (TextView) v.findViewById(R.id.item_secret_username);
-            mActions = (ImageView) v.findViewById(R.id.item_secret_actions);
+            mActions = v.findViewById(R.id.item_secret_actions);
+            mDivider = (ImageView) v.findViewById(R.id.item_secret_divider);
 
             mActions.setOnClickListener(this);
+        }
+
+        public ImageView getDivider() {
+            return mDivider;
         }
 
         public ImageView getIcon() {

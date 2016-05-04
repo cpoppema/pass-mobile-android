@@ -23,7 +23,6 @@
 
         <!-- Status bar background color -->
         <item name="colorPrimaryDark">@color/primary_dark</item>
-
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
@@ -34,4 +33,18 @@
     </style>
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppTheme.SecretImageViewIcon">
+        <item name="android:background">@color/accent</item>
+    </style>
+
+    <style name="AppTheme.SecretTextViewDomain">
+        <item name="android:textColor">@color/primary_text</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="AppTheme.SecretTextViewUsername">
+        <item name="android:textColor">@color/secondary_text</item>
+        <item name="android:textSize">14sp</item>
+    </style>
 </resources>
