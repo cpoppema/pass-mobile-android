@@ -412,8 +412,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mSecretsAdapter = new SecretsAdapter(SecretsActivity.this, secrets);
-                        mRecyclerView.setAdapter(mSecretsAdapter);
+                        mSecretsAdapter.clear();
+                        mSecretsAdapter.addAll(secrets);
                     }
                 });
             }

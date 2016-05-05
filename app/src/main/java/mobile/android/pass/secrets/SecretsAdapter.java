@@ -37,6 +37,20 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
         mFilteredList = secrets;
     }
 
+    // Clean all elements of the recycler.
+    public void clear() {
+        mOriginalList.clear();
+        mFilteredList.clear();
+        notifyDataSetChanged();
+    }
+
+    // Add a list of items.
+    public void addAll(ArrayList<Secret> secrets) {
+        mOriginalList.addAll(secrets);
+        mFilteredList.addAll(secrets);
+        notifyDataSetChanged();
+    }
+
     @Override
     public SecretViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         // TODO parent.getContext() or mContext ?
