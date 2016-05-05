@@ -1,11 +1,10 @@
 package mobile.android.pass.secrets;
 
 import android.content.Context;
-import android.content.res.TypedArray;
+import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.support.v7.widget.ListPopupWindow;
@@ -16,38 +15,25 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-
 import mobile.android.pass.R;
 
-public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretViewHolder> implements Filterable {
+public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretViewHolder> {
 
-    private ArrayList<Secret> mOriginalList;
-    private ArrayList<Secret> mFilteredList;
+    private boolean mDataValid = false;
     private Context mContext;
+    private MatrixCursor mCursor;
 
-    public SecretsAdapter(Context context, ArrayList<Secret> secrets) {
+    public SecretsAdapter(Context context) {
         mContext = context;
-        mOriginalList = secrets;
-        mFilteredList = secrets;
     }
 
-    // Clean all elements of the recycler.
-    public void clear() {
-        mOriginalList.clear();
-        mFilteredList.clear();
-        notifyDataSetChanged();
-    }
-
-    // Add a list of items.
-    public void addAll(ArrayList<Secret> secrets) {
-        mOriginalList.addAll(secrets);
-        mFilteredList.addAll(secrets);
+    public void swapCursor(MatrixCursor cursor)
+    {
+        mCursor = cursor;
+        mDataValid = mCursor != null;
         notifyDataSetChanged();
     }
 
@@ -75,20 +61,28 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
         return holder;
     }
 
-    @Override
-    public void onBindViewHolder(SecretViewHolder holder, int position) {
-        Secret secret = mFilteredList.get(position);
-        holder.setDomain(secret.getDomain());
-        holder.setUsername(secret.getUsername());
-
-        // Hide divider for the last item.
-        int visible = (position == getItemCount() - 1) ? View.INVISIBLE : View.VISIBLE;
-        holder.getDivider().setVisibility(visible);
+    public Cursor getItem(int position) {
+        mCursor.moveToPosition(position);
+        return mCursor;
     }
 
     @Override
     public int getItemCount() {
-        return mFilteredList.size();
+        if (mDataValid && mCursor != null) {
+            return mCursor.getCount();
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(SecretViewHolder holder, int position) {
+        Cursor cursor = getItem(position);
+        holder.bindData(cursor);
+
+        // Hide divider for the last item.
+        int visible = (position == getItemCount() - 1) ? View.INVISIBLE : View.VISIBLE;
+        holder.getDivider().setVisibility(visible);
     }
 
     public static class SecretViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, PopupMenu.OnMenuItemClickListener {
@@ -112,6 +106,17 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
             mActions.setOnClickListener(this);
         }
 
+        public void bindData(Cursor cursor)
+        {
+            String domain = cursor.getString(cursor.getColumnIndex("domain"));
+            String username = cursor.getString(cursor.getColumnIndex("username"));
+            String iconText = Character.toString(domain.charAt(0));
+
+            mDomain.setText(domain);
+            mUsername.setText(username);
+            mIconText.setText(iconText);
+        }
+
         public ImageView getDivider() {
             return mDivider;
         }
@@ -120,17 +125,9 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
             return mIcon;
         }
 
-        public void setDomain(String domain) {
-            mDomain.setText(domain);
-            mIconText.setText(Character.toString(domain.charAt(0)));
-        }
-
-        public void setUsername(String username) {
-            mUsername.setText(username);
-        }
-
         @Override
         public void onClick(View view) {
+            // TODO: block showing popupMenu while refresh is happening
             PopupMenu popupMenu = new PopupMenu(view.getContext(), view);
 
             // Inflating the Popup using xml file.
@@ -154,10 +151,5 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
             Log.i("pass", "Clicked on " + item.getTitle());
             return true;
         }
-    }
-
-    @Override
-    public Filter getFilter() {
-        return null;
     }
 }
