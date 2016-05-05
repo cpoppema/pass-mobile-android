@@ -1,8 +1,11 @@
 package mobile.android.pass.secrets;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.support.v7.widget.ListPopupWindow;
@@ -26,26 +29,34 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
 
     private ArrayList<Secret> mOriginalList;
     private ArrayList<Secret> mFilteredList;
+    private Context mContext;
 
     public SecretsAdapter(Context context, ArrayList<Secret> secrets) {
+        mContext = context;
         mOriginalList = secrets;
         mFilteredList = secrets;
     }
 
     @Override
     public SecretViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        // TODO parent.getContext() or mContext ?
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_secret, parent, false);
         SecretViewHolder holder = new SecretViewHolder(view);
 
         // Convert to a circular ImageView.
         ImageView icon = holder.getIcon();
+
+        // Maintain current color.
         int backgroundColor = ((ColorDrawable) icon.getBackground()).getColor();
-        Context context = icon.getContext();
         Bitmap bitmap = Bitmap.createBitmap(icon.getLayoutParams().width, icon.getLayoutParams().height, Bitmap.Config.ARGB_8888);
         bitmap.eraseColor(backgroundColor);
-        RoundedBitmapDrawable drawable = RoundedBitmapDrawableFactory.create(context.getResources(), bitmap);
+
+        // Replace drawable.
+        // TODO icon.getContext() or mContext or parent ?
+        RoundedBitmapDrawable drawable = RoundedBitmapDrawableFactory.create(parent.getResources(), bitmap);
         drawable.setCircular(true);
         icon.setBackground(drawable);
+        bitmap.recycle();
 
         return holder;
     }
@@ -57,15 +68,8 @@ public class SecretsAdapter extends RecyclerView.Adapter<SecretsAdapter.SecretVi
         holder.setUsername(secret.getUsername());
 
         // Hide divider for the last item.
-        if (position == (mFilteredList.size() - 1)) {
-            holder.getDivider().setVisibility(View.INVISIBLE);
-        } else {
-            holder.getDivider().setVisibility(View.VISIBLE);
-        }
-    }
-
-    public long getItemId(int position) {
-        return position;
+        int visible = (position == getItemCount() - 1) ? View.INVISIBLE : View.VISIBLE;
+        holder.getDivider().setVisibility(visible);
     }
 
     @Override
