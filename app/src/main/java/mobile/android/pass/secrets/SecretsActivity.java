@@ -21,7 +21,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ListView;
 
 import org.json.JSONArray;
@@ -34,6 +33,7 @@ import mobile.android.pass.settings.SettingsActivity;
 
 public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
 
+    private static final String TAG = SecretsActivity.class.toString();
     private final int LOADER_ID_REFRESH = 0;
     private final int LOADER_ID_FILTER = 1;
 
@@ -161,7 +161,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        Log.d("pass", "onLoadFinished");
+        Log.d(TAG, "onLoadFinished");
         mSwipeRefreshLayout.setRefreshing(false);
         mListView.setVisibility(View.VISIBLE);
 
@@ -203,13 +203,13 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
              public boolean onMenuItemClick(MenuItem item) {
                  switch (item.getItemId()) {
                      case R.id.action_copy_secret_password:
-                         Log.i("pass", "Clicked on " + item.getTitle() + ": ********");
+                         Log.i(TAG, "Clicked on " + item.getTitle() + ": ********");
                          break;
                      case R.id.action_copy_secret_username:
-                         Log.i("pass", "Clicked on " + item.getTitle() + ": " + secret.getUsername());
+                         Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getUsername());
                          break;
                      case R.id.action_copy_secret_website:
-                         Log.i("pass", "Clicked on " + item.getTitle() + ": " + secret.getDomain());
+                         Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getDomain());
                          break;
                  }
                  return true;
@@ -219,13 +219,10 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Show menu.
         popupMenu.show();
 
-        // Position menu over button.
+        // Re-position immediately so it is positioned over the view.
         ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) popupMenu.getDragToOpenListener();
-        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
-//        listener.getPopup().setVerticalOffset(- view.getHeight() - lp.topMargin);
+        listener.getPopup().setHorizontalOffset(- listener.getPopup().getWidth() + listener.getPopup().getAnchorView().getWidth());
         listener.getPopup().setVerticalOffset(- view.getHeight());
-
-        // Redraw on the new position.
         listener.getPopup().show();
     }
 
@@ -250,7 +247,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             ArrayList<Secret> secrets = null;
 
             if(mOriginalSecrets == null) {
-                Log.d("pass", "sleeping");
+                Log.d(TAG, "sleeping");
                 try {
                     // Simulate network access.
                     Thread.sleep(2000);
@@ -291,7 +288,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                     secrets = Secret.fromJson(jsonArray);
                 }
             } else {
-                Log.d("pass", "NOT sleeping");
+                Log.d(TAG, "NOT sleeping");
                 secrets = mOriginalSecrets;
             }
 
