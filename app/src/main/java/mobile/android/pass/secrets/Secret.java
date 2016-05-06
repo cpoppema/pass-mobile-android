@@ -1,5 +1,6 @@
 package mobile.android.pass.secrets;
 
+import android.database.Cursor;
 import android.text.TextUtils;
 
 import org.json.JSONArray;
@@ -9,32 +10,32 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 public class Secret {
+    public static final String DOMAIN = "domain";
+    public static final String PATH = "path";
+    public static final String USERNAME = "username";
+    public static final String USERNAME_NORMALIZED = "username_normalized";
+
     private String mDomain;
     private String mPath;
     private String mUsername;
     private String mUsernameNormalized;
 
-    static final String DOMAIN = "domain";
-    static final String PATH = "path";
-    static final String USERNAME = "username";
-    static final String USERNAME_NORMALIZED = "username_normalized";
-
-    public Secret(String domain, String path, String username, String usernameNormalized) {
-        this.mDomain = domain;
-        this.mPath = path;
-        this.mUsername = username;
-        this.mUsernameNormalized = usernameNormalized;
-    }
-
-    public Secret(JSONObject object){
+    public Secret(JSONObject object) {
         try {
-            this.mDomain = object.getString("domain");
-            this.mPath = object.getString("path");
-            this.mUsername = object.getString("username");
-            this.mUsernameNormalized = object.getString("username_normalized");
+            mDomain = object.getString(DOMAIN);
+            mPath = object.getString(PATH);
+            mUsername = object.getString(USERNAME);
+            mUsernameNormalized = object.getString(USERNAME_NORMALIZED);
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    public Secret(Cursor cursor) {
+        mDomain = cursor.getString(cursor.getColumnIndex(DOMAIN));
+        mPath = cursor.getString(cursor.getColumnIndex(PATH));
+        mUsername = cursor.getString(cursor.getColumnIndex(USERNAME));
+        mUsernameNormalized = cursor.getString(cursor.getColumnIndex(USERNAME_NORMALIZED));
     }
 
     public String getDomain() {
