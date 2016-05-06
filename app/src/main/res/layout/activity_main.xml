@@ -1,13 +1,12 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.SwipeRefreshLayout  xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="horizontal"
+    android:id="@+id/swipe_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/content_frame"
-        android:orientation="horizontal"
+    <!-- Placeholder View to make pull-to-refresh visible. -->
+    <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-</LinearLayout>
+</android.support.v4.widget.SwipeRefreshLayout>

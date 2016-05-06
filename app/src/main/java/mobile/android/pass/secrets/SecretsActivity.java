@@ -32,15 +32,17 @@ import java.util.ArrayList;
 import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
 
-public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, LoaderManager.LoaderCallbacks<MatrixCursor>, View.OnClickListener {
+public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
 
-//    private final int LOAD_ID = 0;
-//    private final int FILTER_ID = 1;
+    private final int LOADER_ID_REFRESH = 0;
+    private final int LOADER_ID_FILTER = 1;
 
-    SwipeRefreshLayout mSwipeRefreshLayout;
-    SecretsAdapter mSecretsAdapter;
-    ListView mListView;
-    String mCurFilter;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private SecretsAdapter mSecretsAdapter;
+    private ListView mListView;
+    private String mCurFilter;
+    private ArrayList<Secret> mSecrets = new ArrayList<>();
+    private SearchView mSearchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +71,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 mSwipeRefreshLayout.setRefreshing(true);
                 // Prepare the loader. Either re-connect with an existing one,
                 // or start a new one.
-//                getSupportLoaderManager().initLoader(LOAD_ID, null, SecretsActivity.this);
-                getSupportLoaderManager().initLoader(0, null, SecretsActivity.this);
+                getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
             }
         });
     }
@@ -81,9 +82,9 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         inflater.inflate(R.menu.menu_secrets, menu);
 
         MenuItem item = menu.findItem(R.id.action_search);
-        SearchView searchView = (SearchView) MenuItemCompat.getActionView(item);
-        searchView.setOnQueryTextListener(this);
-        searchView.setSubmitButtonEnabled(false);
+        mSearchView = (SearchView) MenuItemCompat.getActionView(item);
+        mSearchView.setOnQueryTextListener(this);
+        mSearchView.setSubmitButtonEnabled(false);
 
         return true;
     }
@@ -104,8 +105,16 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     public void onRefresh() {
-//        getSupportLoaderManager().restartLoader(LOAD_ID, null, this);
-        getSupportLoaderManager().restartLoader(0, null, this);
+        // Drop filter.
+        if(mSearchView != null) {
+            // Clear filter.
+            mSearchView.setQuery("", false);
+            // Hide keyboard.
+            mSearchView.clearFocus();
+            // Switch back to actionbar icon.
+            mSearchView.setIconified(true);
+        }
+        getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
     }
 
     @Override
@@ -129,29 +138,43 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             return true;
         }
         mCurFilter = newFilter;
-//        getSupportLoaderManager().restartLoader(FILTER_ID, null, this);
-        getSupportLoaderManager().restartLoader(0, null, this);
+        getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
         return true;
     }
 
     @Override
-    public Loader<MatrixCursor> onCreateLoader(int id, Bundle args) {
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         mListView.setVisibility(View.GONE);
         mSwipeRefreshLayout.setRefreshing(true);
-//        switch (id) {
-//            case LOAD_ID:
-//                return new ShowSecretsTask(this, mCurFilter);
-//            case FILTER_ID:
-//            return new ShowSecretsTask(this, mCurFilter, false);
-//        }
-//        return null;
-        return new ShowSecretsTask(this, mCurFilter);
+
+        switch (id) {
+            case LOADER_ID_REFRESH:
+                // Fetch new set of secrets.
+                return new ShowSecretsTask(this);
+            case LOADER_ID_FILTER:
+                // Filter from secrets in memory.
+                // FIXME: search and clear filter and the first item is missing ?!
+                return new ShowSecretsTask(this, mCurFilter, mSecrets);
+        }
+        return null;
     }
 
     @Override
-    public void onLoadFinished(Loader<MatrixCursor> loader, MatrixCursor data) {
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        Log.d("pass", "onLoadFinished");
         mSwipeRefreshLayout.setRefreshing(false);
         mListView.setVisibility(View.VISIBLE);
+
+        if (loader.getId() == LOADER_ID_REFRESH) {
+            // Copy data to array.
+            mSecrets.clear();
+            data.moveToFirst();
+            while(data.moveToNext()) {
+                Secret secret = new Secret(data);
+                mSecrets.add(secret);
+            }
+            data.moveToFirst();
+        }
 
         // Swap the new cursor in. (The framework will take care of closing the
         // old cursor once we return.)
@@ -159,7 +182,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     }
 
     @Override
-    public void onLoaderReset(Loader<MatrixCursor> loader) {
+    public void onLoaderReset(Loader<Cursor> loader) {
         // This is called when the last Cursor provided to onLoadFinished()
         // above is about to be closed. We need to make sure we are no
         // longer using it.
@@ -168,11 +191,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     public void onClick(View view) {
-//        SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) view.getTag();
-//        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(holder.getPosition()));
         int position = (int) view.getTag();
         final Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(position));
-        Log.i("pass", "Clicked on: " + secret.getDomain() + "/" + secret.getUsername());
 
         PopupMenu popupMenu = new PopupMenu(view.getContext(), view);
 
@@ -181,18 +201,17 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
              @Override
              public boolean onMenuItemClick(MenuItem item) {
-                 Log.i("pass", "Clicked on " + item.getTitle() + " for: " + secret.getDomain() + "/" + secret.getUsername());
-                    switch (item.getItemId()) {
-                        case R.id.action_copy_secret_password:
-                            Log.i("pass", "Clicked on " + item.getTitle() + ": ********");
-                            break;
-                        case R.id.action_copy_secret_username:
-                            Log.i("pass", "Clicked on " + item.getTitle() + ": " + secret.getUsername());
-                            break;
-                        case R.id.action_copy_secret_website:
-                            Log.i("pass", "Clicked on " + item.getTitle() + ": " + secret.getDomain());
-                            break;
-                    }
+                 switch (item.getItemId()) {
+                     case R.id.action_copy_secret_password:
+                         Log.i("pass", "Clicked on " + item.getTitle() + ": ********");
+                         break;
+                     case R.id.action_copy_secret_username:
+                         Log.i("pass", "Clicked on " + item.getTitle() + ": " + secret.getUsername());
+                         break;
+                     case R.id.action_copy_secret_website:
+                         Log.i("pass", "Clicked on " + item.getTitle() + ": " + secret.getDomain());
+                         break;
+                 }
                  return true;
              }
         });
@@ -203,34 +222,34 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Position menu over button.
         ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) popupMenu.getDragToOpenListener();
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
-//            listener.getPopup().setVerticalOffset(- view.getHeight() - lp.topMargin);
+//        listener.getPopup().setVerticalOffset(- view.getHeight() - lp.topMargin);
         listener.getPopup().setVerticalOffset(- view.getHeight());
 
         // Redraw on the new position.
         listener.getPopup().show();
     }
 
-    public static class ShowSecretsTask extends AsyncTaskLoader<MatrixCursor> {
-        private MatrixCursor mCursor;
+    public static class ShowSecretsTask extends AsyncTaskLoader<Cursor> {
+        private Cursor mCursor;
         private String mFilter;
-//        private boolean mRefresh = true;
+        private ArrayList<Secret> mOriginalSecrets;
 
-        public ShowSecretsTask(Context context, String filter) {
+        public ShowSecretsTask(Context context) {
             super(context);
-
-            mFilter = filter != null ? filter : "";
         }
-//
-//        public ShowSecretsTask(Context context, String filter, boolean refresh) {
-//            this(context, filter);
-//
-//            mRefresh = refresh;
-//        }
+
+        public ShowSecretsTask(Context context, String filter, ArrayList<Secret> secrets) {
+            this(context);
+            mFilter = filter;
+            mOriginalSecrets = secrets;
+        }
 
         // Runs on a worker thread .
         @Override
-        public MatrixCursor loadInBackground() {
-//            if(mRefresh) {
+        public Cursor loadInBackground() {
+            ArrayList<Secret> secrets = null;
+
+            if(mOriginalSecrets == null) {
                 Log.d("pass", "sleeping");
                 try {
                     // Simulate network access.
@@ -244,18 +263,18 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
                 for (int i = 0; i < alphabet.length; i++) {
                     json += "  {\n" +
-                        "    \"domain\": \"" + Character.toString(alphabet[i]) + "\",\n" +
-                        "    \"path\": \"gmail.com\",\n" +
-                        "    \"username\": \"rcaldwell\",\n" +
-                        "    \"username_normalized\": \"rcaldwell\"\n" +
-                        "  }";
+                            "    \"domain\": \"" + Character.toString(alphabet[i]) + "\",\n" +
+                            "    \"path\": \"gmail.com\",\n" +
+                            "    \"username\": \"rcaldwell\",\n" +
+                            "    \"username_normalized\": \"rcaldwell\"\n" +
+                            "  }";
                     json += ",";
                     json += "  {\n" +
-                        "    \"domain\": \"" + Character.toString(alphabet[i]) + "\",\n" +
-                        "    \"path\": \"work/bitbucket.org\",\n" +
-                        "    \"username\": \"ninapeña\",\n" +
-                        "    \"username_normalized\": \"ninapena\"\n" +
-                        "  }\n";
+                            "    \"domain\": \"" + Character.toString(alphabet[i]) + "\",\n" +
+                            "    \"path\": \"work/bitbucket.org\",\n" +
+                            "    \"username\": \"ninapeña\",\n" +
+                            "    \"username_normalized\": \"ninapena\"\n" +
+                            "  }\n";
                     if (i < (alphabet.length - 1)) {
                         json += ",";
                     }
@@ -269,29 +288,34 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                     e.printStackTrace();
                 }
                 if (jsonArray != null) {
-                    ArrayList<Secret> secrets = Secret.fromJson(jsonArray);
-                    String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
-                    MatrixCursor cursor = new MatrixCursor(columns);
-                    int i = 0;
-                    for(Secret secret : secrets) {
-                        if(secret.isMatch(mFilter)) {
-                            MatrixCursor.RowBuilder builder = cursor.newRow();
-                            builder.add(BaseColumns._ID, i++);
-                            builder.add(Secret.DOMAIN, secret.getDomain());
-                            builder.add(Secret.PATH, secret.getPath());
-                            builder.add(Secret.USERNAME, secret.getUsername());
-                            builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
-                        }
-                    }
-
-                    return cursor;
+                    secrets = Secret.fromJson(jsonArray);
                 }
-//            }
-            return null;
+            } else {
+                Log.d("pass", "NOT sleeping");
+                secrets = mOriginalSecrets;
+            }
+
+            String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
+            MatrixCursor cursor = new MatrixCursor(columns);
+            int i = 0;
+            for(Secret secret : secrets) {
+                if(secret.isMatch(mFilter)) {
+                    MatrixCursor.RowBuilder builder = cursor.newRow();
+                    builder.add(BaseColumns._ID, i++);
+                    builder.add(Secret.DOMAIN, secret.getDomain());
+                    builder.add(Secret.PATH, secret.getPath());
+                    builder.add(Secret.USERNAME, secret.getUsername());
+                    builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+                }
+            }
+
+            cursor.moveToFirst();
+
+            return cursor;
         }
 
         @Override
-        public void deliverResult(MatrixCursor cursor) {
+        public void deliverResult(Cursor cursor) {
             super.deliverResult(cursor);
 
             if (isReset()) {
@@ -301,7 +325,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 }
                 return;
             }
-            MatrixCursor oldCursor = mCursor;
+            Cursor oldCursor = mCursor;
             mCursor = cursor;
 
             if (isStarted()) {
@@ -330,7 +354,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         }
 
         @Override
-        public void onCanceled(MatrixCursor cursor) {
+        public void onCanceled(Cursor cursor) {
             if (cursor != null && !cursor.isClosed()) {
                 cursor.close();
             }

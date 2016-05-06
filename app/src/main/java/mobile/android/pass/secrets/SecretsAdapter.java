@@ -18,25 +18,24 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
     private Context mContext;
     private AlphabetIndexer mAlphabetIndexer;
-//    private Cursor mOriginalCursor;
-//    private Cursor mFilteredCursor;
+    private final String ALPHABET = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public SecretsAdapter(Context context) {
         super(context, null, false);
 
         mContext = context;
-
     }
 
     @Override
     public Cursor swapCursor(Cursor newCursor) {
         Cursor oldCursor = super.swapCursor(newCursor);
 
-        // Set original cursor.
-        if (mAlphabetIndexer == null) {
-            mAlphabetIndexer = new AlphabetIndexer(newCursor, newCursor.getColumnIndex(Secret.DOMAIN), "ABCDEFGHIJKLMNOPQRTSUVWXYZ");
+        if(newCursor != null) {
+            mAlphabetIndexer = new AlphabetIndexer(newCursor, newCursor.getColumnIndex(Secret.DOMAIN), ALPHABET);
         }
-        mAlphabetIndexer.setCursor(newCursor);
+        if(mAlphabetIndexer != null) {
+            mAlphabetIndexer.setCursor(newCursor);
+        }
         return oldCursor;
     }
 
@@ -52,8 +51,6 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
     public void bindView(View view, Context context, Cursor cursor) {
         SecretViewHolder holder = (SecretViewHolder) view.getTag();
         holder.bindData(cursor);
-//        holder.setPosition(cursor.getPosition());
-//        view.setOnClickListener((View.OnClickListener) mContext);
         holder.getActions().setTag(cursor.getPosition());
         holder.getActions().setOnClickListener((View.OnClickListener) mContext);
     }
@@ -88,7 +85,6 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         private TextView mDomain;
         private TextView mUsername;
         private View mActions;
-        private int mPosition;
 
         public SecretViewHolder(View v) {
             mIcon = (ImageView) v.findViewById(R.id.item_secret_icon);
@@ -101,6 +97,10 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             CircularImageView.convertToCircularImageView(mIcon);
         }
 
+        public View getActions() {
+            return mActions;
+        }
+
         public void bindData(Cursor cursor) {
             String domain = cursor.getString(cursor.getColumnIndex(Secret.DOMAIN));
             String username = cursor.getString(cursor.getColumnIndex(Secret.USERNAME));
@@ -109,18 +109,6 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             mDomain.setText(domain);
             mUsername.setText(username);
             mIconText.setText(iconText);
-        }
-
-        public View getActions() {
-            return mActions;
-        }
-
-        public void setPosition(int position) {
-            mPosition = position;
-        }
-
-        public int getPosition() {
-            return mPosition;
         }
     }
 }

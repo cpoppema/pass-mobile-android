@@ -4,6 +4,7 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.Intent;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -13,15 +14,26 @@ import android.view.MenuItem;
 import mobile.android.pass.secrets.UnlockFragment;
 import mobile.android.pass.settings.SettingsActivity;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
+
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Setup the SwipeRefreshLayout.
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_main);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
+        mSwipeRefreshLayout.setOnRefreshListener(this);
+
         // TODO: Make conditional: is a public key already set in preferences or not.
-        this.showUnlockDialog();
+        boolean hasKeypair = true;
+        mSwipeRefreshLayout.setEnabled(hasKeypair);
+        if(hasKeypair) {
+            showUnlockDialog();
+        }
     }
 
     @Override
@@ -68,6 +80,11 @@ public class MainActivity extends AppCompatActivity {
 //        // 3)
 //        DialogFragment newFragment = new UnlockFragment();
 //        newFragment.show(getFragmentManager(), "dialog");
+    }
 
+    @Override
+    public void onRefresh() {
+        mSwipeRefreshLayout.setRefreshing(false);
+        showUnlockDialog();
     }
 }
