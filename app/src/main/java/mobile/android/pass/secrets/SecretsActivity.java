@@ -213,19 +213,19 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     public static class ShowSecretsTask extends AsyncTaskLoader<MatrixCursor> {
         private MatrixCursor mCursor;
         private String mFilter;
-        private boolean mRefresh = true;
+//        private boolean mRefresh = true;
 
         public ShowSecretsTask(Context context, String filter) {
             super(context);
 
             mFilter = filter != null ? filter : "";
         }
-
-        public ShowSecretsTask(Context context, String filter, boolean refresh) {
-            this(context, filter);
-
-            mRefresh = refresh;
-        }
+//
+//        public ShowSecretsTask(Context context, String filter, boolean refresh) {
+//            this(context, filter);
+//
+//            mRefresh = refresh;
+//        }
 
         // Runs on a worker thread .
         @Override
@@ -240,29 +240,28 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 }
 
                 // Fetching some data, data has now returned
-                String secret1 = "  {\n" +
-                        "    \"domain\": \"gmail.com\",\n" +
+                String json = "[\n";
+                char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+                for (int i = 0; i < alphabet.length; i++) {
+                    json += "  {\n" +
+                        "    \"domain\": \"" + Character.toString(alphabet[i]) + "\",\n" +
                         "    \"path\": \"gmail.com\",\n" +
                         "    \"username\": \"rcaldwell\",\n" +
                         "    \"username_normalized\": \"rcaldwell\"\n" +
                         "  }";
-                String secret2 = "  {\n" +
-                        "    \"domain\": \"bitbucket.org\",\n" +
+                    json += ",";
+                    json += "  {\n" +
+                        "    \"domain\": \"" + Character.toString(alphabet[i]) + "\",\n" +
                         "    \"path\": \"work/bitbucket.org\",\n" +
                         "    \"username\": \"ninapeña\",\n" +
                         "    \"username_normalized\": \"ninapena\"\n" +
                         "  }\n";
-                String json = "[\n";
-                int listSize = 20;
-                for (int i = 0; i < listSize / 2; i++) {
-                    json += secret1;
-                    json += ",";
-                    json += secret2;
-                    if (i < (listSize / 2 - 1)) {
+                    if (i < (alphabet.length - 1)) {
                         json += ",";
                     }
                 }
                 json += "]";
+
                 JSONArray jsonArray = null;
                 try {
                     jsonArray = new JSONArray(json);
@@ -273,14 +272,16 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                     ArrayList<Secret> secrets = Secret.fromJson(jsonArray);
                     String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
                     MatrixCursor cursor = new MatrixCursor(columns);
-                    for (int i = 0; i < secrets.size(); i++) {
-                        Secret secret = secrets.get(i);
-                        MatrixCursor.RowBuilder builder = cursor.newRow();
-                        builder.add(BaseColumns._ID, i);
-                        builder.add(Secret.DOMAIN, secret.getDomain());
-                        builder.add(Secret.PATH, secret.getPath());
-                        builder.add(Secret.USERNAME, secret.getUsername());
-                        builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+                    int i = 0;
+                    for(Secret secret : secrets) {
+                        if(secret.isMatch(mFilter)) {
+                            MatrixCursor.RowBuilder builder = cursor.newRow();
+                            builder.add(BaseColumns._ID, i++);
+                            builder.add(Secret.DOMAIN, secret.getDomain());
+                            builder.add(Secret.PATH, secret.getPath());
+                            builder.add(Secret.USERNAME, secret.getUsername());
+                            builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+                        }
                     }
 
                     return cursor;
