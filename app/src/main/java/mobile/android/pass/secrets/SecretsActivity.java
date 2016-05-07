@@ -81,7 +81,9 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             });
         } else {
             // Empty filter will simply show everything.
-            getSupportLoaderManager().initLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
+            // Use restart instead of init to force-create a new loader, which in turn creates a
+            // new SecretsTaskLoader with the latest mSecrets as its mOriginalSecrets.
+            getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
         }
     }
 
