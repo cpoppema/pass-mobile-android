@@ -38,6 +38,11 @@
         <item name="android:background">@color/accent</item>
     </style>
 
+    <style name="AppTheme.SecretTextViewIcon">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/icons</item>
+    </style>
+
     <style name="AppTheme.SecretTextViewDomain">
         <item name="android:textColor">@color/primary_text</item>
         <item name="android:textSize">16sp</item>

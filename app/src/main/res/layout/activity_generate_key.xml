@@ -29,7 +29,6 @@
                     android:inputType="textNoSuggestions"
                     android:maxLines="1"
                     android:singleLine="true" />
-
             </android.support.design.widget.TextInputLayout>
 
             <android.support.design.widget.TextInputLayout
@@ -44,7 +43,6 @@
                     android:inputType="textPassword"
                     android:maxLines="1"
                     android:singleLine="true" />
-
             </android.support.design.widget.TextInputLayout>
 
             <Button
@@ -55,7 +53,6 @@
                 android:layout_marginTop="@dimen/text_margin"
                 android:text="@string/action_create_key"
                 android:textStyle="bold" />
-
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -119,12 +119,15 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSearchView = (SearchView) MenuItemCompat.getActionView(item);
         mSearchView.setOnQueryTextListener(this);
         mSearchView.setSubmitButtonEnabled(false);
+//        mSearchView.setIconifiedByDefault(true);
 
         // Restored from saved state.
         if(mCurFilter != null) {
             mSearchView.setQuery(mCurFilter, false);
             if(!TextUtils.isEmpty(mCurFilter)) {
                 mSearchView.setIconified(false);
+//            } else {
+//                mSearchView.setIconified(true);
             }
         }
 
@@ -218,7 +221,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 return new SecretsTaskLoader(this);
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
-                // FIXME: search and clear filter and the first item is missing ?!
+                // FIXME: the first item is missing after search and clearing filter ?!
                 return new SecretsTaskLoader(this, mCurFilter, mSecrets);
         }
         return null;
