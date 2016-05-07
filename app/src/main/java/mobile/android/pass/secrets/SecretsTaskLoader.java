@@ -46,22 +46,18 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
             // Fetching some data, data has now returned
             String json = "[\n";
             char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+            int listSize = 26 * 10;
             for (int i = 0; i < alphabet.length; i++) {
-                json += "  {\n" +
-                        "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
-                        "    \"path\": \"gmail.com\",\n" +
-                        "    \"username\": \"rcaldwell\",\n" +
-                        "    \"username_normalized\": \"rcaldwell\"\n" +
-                        "  }";
-                json += ",";
-                json += "  {\n" +
-                        "    \"domain\": \"" + Character.toString(alphabet[i]) + ".org\",\n" +
-                        "    \"path\": \"work/bitbucket.org\",\n" +
-                        "    \"username\": \"ninapeña\",\n" +
-                        "    \"username_normalized\": \"ninapena\"\n" +
-                        "  }\n";
-                if (i < (alphabet.length - 1)) {
-                    json += ",";
+                for (int j = 0; j < listSize / alphabet.length; j++) {
+                    json += "  {\n" +
+                            "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
+                            "    \"path\": \"gmail.com\",\n" +
+                            "    \"username\": \"rcaldwell\",\n" +
+                            "    \"username_normalized\": \"rcaldwell\"\n" +
+                            "  }";
+                    if ((i * listSize / alphabet.length + j) < listSize - 1) {
+                        json += ",";
+                    }
                 }
             }
             json += "]";

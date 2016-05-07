@@ -1,6 +1,8 @@
 package mobile.android.pass.secrets;
 
 import android.database.Cursor;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.TextUtils;
 
 import org.json.JSONArray;
@@ -9,7 +11,22 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
-public class Secret {
+public class Secret implements Parcelable {
+    public static final Parcelable.Creator<Secret> CREATOR = new Parcelable.Creator<Secret>() {
+        // This simply calls our new constructor (typically private) and
+        // passes along the unmarshalled `Parcel`, and then returns the new object!
+        @Override
+        public Secret createFromParcel(Parcel in) {
+            return new Secret(in);
+        }
+
+        // We just need to copy this and change the type to match our class.
+        @Override
+        public Secret[] newArray(int size) {
+            return new Secret[size];
+        }
+    };
+
     public static final String DOMAIN = "domain";
     public static final String PATH = "path";
     public static final String USERNAME = "username";
@@ -38,6 +55,16 @@ public class Secret {
         mUsernameNormalized = cursor.getString(cursor.getColumnIndex(USERNAME_NORMALIZED));
     }
 
+    private Secret(Parcel in){
+        String[] data = new String[3];
+
+        in.readStringArray(data);
+        mDomain = data[0];
+        mPath = data[1];
+        mUsername = data[2];
+        mUsernameNormalized = data[3];
+    }
+
     public String getDomain() {
         return mDomain;
     }
@@ -52,6 +79,16 @@ public class Secret {
 
     public String getUsernameNormalized() {
         return mUsernameNormalized;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeStringArray(new String[] {mDomain, mPath, mUsername, mUsernameNormalized});
     }
 
     private boolean fuzzyContains(String hay, String needle) {

@@ -34,8 +34,9 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     private SecretsAdapter mSecretsAdapter;
     private ListView mListView;
     private String mCurFilter;
-    private ArrayList<Secret> mSecrets = new ArrayList<>();
+    private ArrayList<Secret> mSecrets;
     private SearchView mSearchView;
+    private PopupMenu mPopupMenu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,12 +46,21 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Add back button to action bar.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        Log.d(TAG, "onCreate");
+
+        // Restore from saved state.
+        if(savedInstanceState != null) { // TODO: Is this even necessary ? It never seems to be null.
+            mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
+            mCurFilter = savedInstanceState.getString("mCurFilter");
+        }
+
         // Create the cursor adapter.
         mSecretsAdapter = new SecretsAdapter(this);
 
-        // Attach the adapter to a RecyclerView.
+        // Attach the adapter to a ListView.
         mListView = (ListView) findViewById(R.id.list_view_secrets);
         mListView.setAdapter(mSecretsAdapter);
+        // TODO: FIXME: Can't fast scroll without triggering swipe-to-refresh.
         mListView.setFastScrollEnabled(true);
 
         // Setup the SwipeRefreshLayout.
@@ -58,19 +68,50 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
 
-        // Initial load with animation.
-        mSwipeRefreshLayout.post(new Runnable() {
-            @Override public void run() {
-                mSwipeRefreshLayout.setRefreshing(true);
-                // Prepare the loader. Either re-connect with an existing one,
-                // or start a new one.
-                getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
-            }
-        });
+        if(mSecrets == null) {
+            // Initial load with animation.
+            mSwipeRefreshLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    mSwipeRefreshLayout.setRefreshing(true);
+                    // Prepare the loader. Either re-connect with an existing one,
+                    // or start a new one.
+                    getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
+                }
+            });
+        } else {
+            // Empty filter will simply show everything.
+            getSupportLoaderManager().initLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        Log.d(TAG, "onSaveInstanceState");
+        super.onSaveInstanceState(outState);
+
+        outState.putParcelableArrayList("mSecrets", mSecrets);
+        outState.putString("mCurFilter", mCurFilter);
+
+        // FIXME: It should be possible to redraw this popup (i.e. actionbar menu can do it, so ..)!
+        if(mPopupMenu != null) {
+            mPopupMenu.dismiss();
+        }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        Log.d(TAG, "onRestoreInstanceState");
+        super.onRestoreInstanceState(savedInstanceState);
+
+        mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
+        mCurFilter = savedInstanceState.getString("mCurFilter");
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        Log.d(TAG, "onCreateOptionsMenu");
+
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_secrets, menu);
 
@@ -78,6 +119,14 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSearchView = (SearchView) MenuItemCompat.getActionView(item);
         mSearchView.setOnQueryTextListener(this);
         mSearchView.setSubmitButtonEnabled(false);
+
+        // Restored from saved state.
+        if(mCurFilter != null) {
+            mSearchView.setQuery(mCurFilter, false);
+            if(!TextUtils.isEmpty(mCurFilter)) {
+                mSearchView.setIconified(false);
+            }
+        }
 
         return true;
     }
@@ -110,15 +159,38 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
     }
 
+    /**
+     * This method is executed when pressing the search button on the kayboard and the search button
+     * in the text editing mode for landscape orientation.
+     * FIXME: dismiss full screen editor.
+     */
     @Override
     public boolean onQueryTextSubmit(String query) {
-        // Don't care about this.
+        Log.d(TAG, "onQueryTextSubmit");
+        // Called when the action bar search text has changed. Update
+        // the search filter, and restart the loader to do a new query
+        // with this filter.
+        String newFilter = !TextUtils.isEmpty(query) ? query : null;
+        // Don't do anything if the filter hasn't actually changed.
+        // Prevents restarting the loader when restoring state.
+        if (mCurFilter == null && newFilter == null) {
+            return true;
+        }
+        if (mCurFilter != null && mCurFilter.equals(newFilter)) {
+            return true;
+        }
+        mCurFilter = newFilter;
+        getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
         return true;
     }
 
+    /**
+     * This method is executed while typing in the SearchView for portrait orientation.
+     */
     @Override
     public boolean onQueryTextChange(String newText) {
-        // Called when the action bar search text has changed.  Update
+        Log.d(TAG, "onQueryTextChange");
+        // Called when the action bar search text has changed. Update
         // the search filter, and restart the loader to do a new query
         // with this filter.
         String newFilter = !TextUtils.isEmpty(newText) ? newText : null;
@@ -160,7 +232,11 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         if (loader.getId() == LOADER_ID_REFRESH) {
             // Copy data to array.
-            mSecrets.clear();
+            if(mSecrets == null) {
+                mSecrets = new ArrayList<>();
+            } else {
+                mSecrets.clear();
+            }
             data.moveToFirst();
             while(data.moveToNext()) {
                 Secret secret = new Secret(data);
@@ -187,11 +263,11 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         int position = (int) view.getTag();
         final Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(position));
 
-        PopupMenu popupMenu = new PopupMenu(view.getContext(), view);
+        mPopupMenu = new PopupMenu(view.getContext(), view);
 
         // Inflating the Popup using xml file.
-        popupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, popupMenu.getMenu());
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+        mPopupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, mPopupMenu.getMenu());
+        mPopupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
              @Override
              public boolean onMenuItemClick(MenuItem item) {
                  switch (item.getItemId()) {
@@ -208,12 +284,19 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                  return true;
              }
         });
+        mPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
+            @Override
+            public void onDismiss(PopupMenu menu) {
+                Log.d(TAG, "mPopMenu dismissed");
+                mPopupMenu = null;
+            }
+        });
 
         // Show menu.
-        popupMenu.show();
+        mPopupMenu.show();
 
         // Re-position immediately so it is positioned over the view.
-        ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) popupMenu.getDragToOpenListener();
+        ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) mPopupMenu.getDragToOpenListener();
         listener.getPopup().setHorizontalOffset(- listener.getPopup().getWidth() + listener.getPopup().getAnchorView().getWidth());
         listener.getPopup().setVerticalOffset(- view.getHeight());
         listener.getPopup().show();

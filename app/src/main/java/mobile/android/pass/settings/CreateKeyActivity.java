@@ -123,7 +123,10 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         if (show) {
             // Dismiss keyboard.
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            View viewWithFocus= getCurrentFocus();
+            if(viewWithFocus != null) {
+                imm.hideSoftInputFromWindow(viewWithFocus.getWindowToken(), 0);
+            }
 
             // Hide form.
             mCreateKeyFormView.setVisibility(View.GONE);
