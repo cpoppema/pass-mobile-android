@@ -38,7 +38,7 @@ public class SettingsActivity extends AppCompatActivity {
                 onBackPressed();
                 return true;
             case R.id.open_generate_key:
-                startActivity(new Intent(this, GenerateKeyActivity.class));
+                startActivity(new Intent(this, CreateKeyActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
