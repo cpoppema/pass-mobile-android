@@ -16,6 +16,7 @@
         <item name="android:textColorTertiary">@android:color/white</item>
 
         <!-- Input with focus label, cursor and border bottom color -->
+        <!-- Android 6: this is also the color of Dialog buttons -->
         <item name="colorAccent">@color/accent</item>
 
         <!-- App bar background color -->
