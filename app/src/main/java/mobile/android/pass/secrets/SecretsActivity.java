@@ -3,6 +3,7 @@ package mobile.android.pass.secrets;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
@@ -17,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.ListView;
 
 import java.util.ArrayList;
@@ -25,18 +27,24 @@ import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
 
 public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
-
     private static final String TAG = SecretsActivity.class.toString();
+
     private final int LOADER_ID_REFRESH = 0;
     private final int LOADER_ID_FILTER = 1;
+    private final int NO_POPUP = -1;
 
+    // UI references.
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private SecretsAdapter mSecretsAdapter;
     private ListView mListView;
-    private String mCurFilter;
-    private ArrayList<Secret> mSecrets;
     private SearchView mSearchView;
+
+    // Save to and restore state from these.
+    private Parcelable mListViewState;
+    private String mCurFilter;
     private PopupMenu mPopupMenu;
+    private int mPopupMenuViewPosition = NO_POPUP;
+    private ArrayList<Secret> mSecrets;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +60,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         if(savedInstanceState != null) { // TODO: Is this even necessary ? It never seems to be null.
             mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
             mCurFilter = savedInstanceState.getString("mCurFilter");
+            mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
         }
 
         // Create the cursor adapter.
@@ -95,10 +104,13 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         outState.putParcelableArrayList("mSecrets", mSecrets);
         outState.putString("mCurFilter", mCurFilter);
 
-        // FIXME: It should be possible to redraw this popup (i.e. actionbar menu can do it, so ..)!
+        outState.putInt("mPopupMenuViewPosition", mPopupMenuViewPosition);
         if(mPopupMenu != null) {
             mPopupMenu.dismiss();
         }
+
+        mListViewState = mListView.onSaveInstanceState();
+        outState.putParcelable("mListViewState", mListViewState);
     }
 
     @Override
@@ -108,6 +120,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
         mCurFilter = savedInstanceState.getString("mCurFilter");
+        mListViewState = savedInstanceState.getParcelable("mListViewState");
     }
 
     @Override
@@ -152,6 +165,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     public void onRefresh() {
+        Log.d(TAG, "onRefresh");
         // Drop filter.
         if(mSearchView != null) {
             // Clear filter.
@@ -214,6 +228,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        Log.d(TAG, "onCreateLoader: " + (id == LOADER_ID_FILTER ? "LOADER_ID_FILTER" : "LOADER_ID_REFRESH"));
         mListView.setVisibility(View.GONE);
         mSwipeRefreshLayout.setRefreshing(true);
 
@@ -231,7 +246,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        Log.d(TAG, "onLoadFinished");
+        Log.d(TAG, "onLoadFinished: " + (loader.getId() == LOADER_ID_FILTER ? "LOADER_ID_FILTER" : "LOADER_ID_REFRESH"));
         mSwipeRefreshLayout.setRefreshing(false);
         mListView.setVisibility(View.VISIBLE);
 
@@ -253,57 +268,111 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Swap the new cursor in. (The framework will take care of closing the
         // old cursor once we return.)
         mSecretsAdapter.swapCursor(data);
+
+        // Restore scrolling position in mListView (can be done after swapCursor).
+        if (mListViewState != null) {
+            mListView.post(new Runnable() {
+                @Override
+                public void run() {
+                    mListView.requestFocus();
+                    mListView.onRestoreInstanceState(mListViewState);
+                    mListViewState = null;
+                }
+            });
+        }
+
+        // Restore open PopupMenu (can be done after swapCursor).
+        if (mPopupMenuViewPosition != NO_POPUP) {
+            // Post a Runnable because showPopup anchors to a View that needs to be rendered first.
+            mListView.post(new Runnable() {
+                @Override
+                public void run() {
+                    showPopup(mPopupMenuViewPosition);
+                }
+            });
+        }
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
+        Log.d(TAG, "onLoaderReset: " + (loader.getId() == LOADER_ID_FILTER ? "LOADER_ID_FILTER" : "LOADER_ID_REFRESH"));
         // This is called when the last Cursor provided to onLoadFinished()
         // above is about to be closed. We need to make sure we are no
         // longer using it.
         mSecretsAdapter.swapCursor(null);
     }
 
-    @Override
-    public void onClick(View view) {
-        int position = (int) view.getTag();
-        final Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(position));
+    private void showPopup(int popupMenuViewPosition) {
+        Log.d(TAG, "showPopup: " + popupMenuViewPosition);
 
-        mPopupMenu = new PopupMenu(view.getContext(), view);
+        if(mListView == null) {
+            return;
+        }
+
+        int firstListItemPosition = mListView.getFirstVisiblePosition();
+        int lastListItemPosition = firstListItemPosition + mListView.getChildCount() - 1;
+
+        // Re-use active view or create one using the adapter.
+        View view;
+        if (popupMenuViewPosition < firstListItemPosition || popupMenuViewPosition > lastListItemPosition ) {
+            Log.d(TAG, "getView()");
+            // FIXME: "null" positions mPopupMenu in the top left corner of the screen when restoring.
+            view = mListView.getAdapter().getView(popupMenuViewPosition, null, mListView);
+        } else {
+            Log.d(TAG, "getChildAt()");
+            int childIndex = popupMenuViewPosition - firstListItemPosition;
+            view = mListView.getChildAt(childIndex);
+        }
+
+        SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) view.getTag();
+        View anchorView = holder.getActions();
+        Log.d(TAG, "anchorView.width: " + anchorView.getWidth()); // "0" for getView()
 
         // Inflating the Popup using xml file.
+        mPopupMenu = new PopupMenu(anchorView.getContext(), anchorView);
         mPopupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, mPopupMenu.getMenu());
+
+        final Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(popupMenuViewPosition));
         mPopupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-             @Override
-             public boolean onMenuItemClick(MenuItem item) {
-                 switch (item.getItemId()) {
-                     case R.id.action_copy_secret_password:
-                         Log.i(TAG, "Clicked on " + item.getTitle() + ": ********");
-                         break;
-                     case R.id.action_copy_secret_username:
-                         Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getUsername());
-                         break;
-                     case R.id.action_copy_secret_website:
-                         Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getDomain());
-                         break;
-                 }
-                 return true;
-             }
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.action_copy_secret_password:
+                        Log.i(TAG, "Clicked on " + item.getTitle() + ": ********");
+                        break;
+                    case R.id.action_copy_secret_username:
+                        Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getUsername());
+                        break;
+                    case R.id.action_copy_secret_website:
+                        Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getDomain());
+                        break;
+                }
+                return true;
+            }
         });
+
         mPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
             @Override
             public void onDismiss(PopupMenu menu) {
                 Log.d(TAG, "mPopMenu dismissed");
                 mPopupMenu = null;
+                mPopupMenuViewPosition = NO_POPUP;
             }
         });
 
         // Show menu.
         mPopupMenu.show();
 
-        // Re-position immediately so it is positioned over the view.
+        // Re-position immediately so it is positioned on top of anchorView (PopupMenu has no OnShowListener).
         ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) mPopupMenu.getDragToOpenListener();
-        listener.getPopup().setHorizontalOffset(- listener.getPopup().getWidth() + listener.getPopup().getAnchorView().getWidth());
-        listener.getPopup().setVerticalOffset(- view.getHeight());
+        listener.getPopup().setHorizontalOffset(- listener.getPopup().getWidth() + anchorView.getWidth());
+        listener.getPopup().setVerticalOffset(- anchorView.getHeight());
         listener.getPopup().show();
+    }
+
+    @Override
+    public void onClick(View view) {
+        mPopupMenuViewPosition = (int) view.getTag();
+        showPopup(mPopupMenuViewPosition);
     }
 }
