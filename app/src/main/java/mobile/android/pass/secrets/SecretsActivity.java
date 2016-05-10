@@ -18,7 +18,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.ListView;
 
 import java.util.ArrayList;
@@ -37,27 +36,27 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private SecretsAdapter mSecretsAdapter;
     private ListView mListView;
+    private PopupMenu mPopupMenu;
     private SearchView mSearchView;
 
     // Save to and restore state from these.
     private Parcelable mListViewState;
     private String mCurFilter;
-    private PopupMenu mPopupMenu;
     private int mPopupMenuViewPosition = NO_POPUP;
     private ArrayList<Secret> mSecrets;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
+
         setContentView(R.layout.activity_secrets);
 
         // Add back button to action bar.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        Log.d(TAG, "onCreate");
-
         // Restore from saved state.
-        if(savedInstanceState != null) { // TODO: Is this even necessary ? It never seems to be null.
+        if (savedInstanceState != null) { // TODO: Is this even necessary ? It never seems to be null.
             mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
             mCurFilter = savedInstanceState.getString("mCurFilter");
             mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
@@ -77,7 +76,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
 
-        if(mSecrets == null) {
+        if (mSecrets == null) {
             // Initial load with animation.
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
@@ -105,7 +104,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         outState.putString("mCurFilter", mCurFilter);
 
         outState.putInt("mPopupMenuViewPosition", mPopupMenuViewPosition);
-        if(mPopupMenu != null) {
+        if (mPopupMenu != null) {
             mPopupMenu.dismiss();
         }
 
@@ -137,9 +136,9 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 //        mSearchView.setIconifiedByDefault(true);
 
         // Restored from saved state.
-        if(mCurFilter != null) {
+        if (mCurFilter != null) {
             mSearchView.setQuery(mCurFilter, false);
-            if(!TextUtils.isEmpty(mCurFilter)) {
+            if (!TextUtils.isEmpty(mCurFilter)) {
                 mSearchView.setIconified(false);
 //            } else {
 //                mSearchView.setIconified(true);
@@ -167,7 +166,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     public void onRefresh() {
         Log.d(TAG, "onRefresh");
         // Drop filter.
-        if(mSearchView != null) {
+        if (mSearchView != null) {
             // Clear filter.
             mSearchView.setQuery("", false);
             // Hide keyboard.
@@ -252,13 +251,13 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         if (loader.getId() == LOADER_ID_REFRESH) {
             // Copy data to array.
-            if(mSecrets == null) {
+            if (mSecrets == null) {
                 mSecrets = new ArrayList<>();
             } else {
                 mSecrets.clear();
             }
             data.moveToFirst();
-            while(data.moveToNext()) {
+            while (data.moveToNext()) {
                 Secret secret = new Secret(data);
                 mSecrets.add(secret);
             }
@@ -305,7 +304,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     private void showPopup(int popupMenuViewPosition) {
         Log.d(TAG, "showPopup: " + popupMenuViewPosition);
 
-        if(mListView == null) {
+        if (mListView == null) {
             return;
         }
 
@@ -314,7 +313,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         // Re-use active view or create one using the adapter.
         View view;
-        if (popupMenuViewPosition < firstListItemPosition || popupMenuViewPosition > lastListItemPosition ) {
+        if (popupMenuViewPosition < firstListItemPosition || popupMenuViewPosition > lastListItemPosition) {
             Log.d(TAG, "getView()");
             // FIXME: "null" positions mPopupMenu in the top left corner of the screen when restoring.
             view = mListView.getAdapter().getView(popupMenuViewPosition, null, mListView);
@@ -365,8 +364,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         // Re-position immediately so it is positioned on top of anchorView (PopupMenu has no OnShowListener).
         ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) mPopupMenu.getDragToOpenListener();
-        listener.getPopup().setHorizontalOffset(- listener.getPopup().getWidth() + anchorView.getWidth());
-        listener.getPopup().setVerticalOffset(- anchorView.getHeight());
+        listener.getPopup().setHorizontalOffset(-listener.getPopup().getWidth() + anchorView.getWidth());
+        listener.getPopup().setVerticalOffset(-anchorView.getHeight());
         listener.getPopup().show();
     }
 

@@ -2,6 +2,10 @@
     <!-- App/MainActivity's title -->
     <string name="app_name">Pass</string>
 
+    <string name="dialog_settings_title">No configuration found</string>
+    <string name="dialog_settings_message">To get started, open settings, configure your remote server and generate a key!</string>
+    <string name="dialog_settings_button">OPEN SETTINGS</string>
+
     <!-- SettingActivity's title -->
     <string name="action_settings">Settings</string>
 
@@ -25,15 +29,15 @@
     <string name="pref_public_key_action_show">Show key</string>
 
     <!-- UnlockFragment -->
-    <string name="secrets_dialog_title_unlock">Passphrase</string>
-    <string name="secrets_invalid_passphrase">Invalid passphrase</string>
-    <string name="secrets_button_unlock">UNLOCK</string>
+    <string name="fragment_unlock_title">Passphrase</string>
+    <string name="fragment_unlock_invalid_passphrase">Invalid passphrase</string>
+    <string name="fragment_unlock_button">UNLOCK</string>
 
     <!-- Menu item title to open SettingsActivity -->
     <string name="menu_settings">Settings</string>
 
     <!-- Passphrase dialog -->
-    <string name="unlock_button">UNLOCK</string>
+    <string name="fragment_unlock_action_unlock">UNLOCK</string>
     <string name="unlock_invalid">Invalid passphrase</string>
     <string name="unlock_title">Passphrase</string>
 
