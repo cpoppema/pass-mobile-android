@@ -47,7 +47,7 @@ public class UnlockFragment extends DialogFragment {
         onViewCreated(v, null);
         builder.setView(v);
 
-        // Cannot put this in onCreateView.
+        // Cannot put this in onCreateView nor onViewCreated.
         final EditText passphraseInput = (EditText) v.findViewById(R.id.unlock_passphrase);
 
         // Create dialog to return.
