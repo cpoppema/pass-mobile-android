@@ -35,6 +35,7 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
         }
 
         mKeyPair = PgpHelper.generateKeyPair(mKeyName, mPassword);
+        Log.d(TAG, "generated");
         return mKeyPair;
     }
 

@@ -56,7 +56,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // Restore from saved state.
-        if (savedInstanceState != null) { // TODO: Is this even necessary ? It never seems to be null.
+        if (savedInstanceState != null) {
             mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
             mCurFilter = savedInstanceState.getString("mCurFilter");
             mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
@@ -315,7 +315,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         View view;
         if (popupMenuViewPosition < firstListItemPosition || popupMenuViewPosition > lastListItemPosition) {
             Log.d(TAG, "getView()");
-            // FIXME: "null" positions mPopupMenu in the top left corner of the screen when restoring.
+            // FIXME: getView() positions mPopupMenu in the top left corner of the screen when restoring.
             view = mListView.getAdapter().getView(popupMenuViewPosition, null, mListView);
         } else {
             Log.d(TAG, "getChildAt()");

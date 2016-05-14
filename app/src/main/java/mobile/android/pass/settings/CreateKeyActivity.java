@@ -147,7 +147,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
 
     @Override
     public void onLoadFinished(Loader<PGPSecretKey> loader, PGPSecretKey keyPair) {
-        Log.d(TAG, "onLoadFinished");
+        Log.d(TAG, "onLoadFinished, no keypair: " + Boolean.toString(keyPair == null));
 
 
         if (keyPair == null) {

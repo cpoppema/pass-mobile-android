@@ -51,6 +51,13 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
@@ -68,6 +75,8 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         setSummary(findPreference(key), key);
+
+        Log.i(TAG, "Preference changed: " + key);
 
         if(TextUtils.equals(key, StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
             // Enable interaction for PREF_KEY_PUBLIC_KEY_ID if there is a key.

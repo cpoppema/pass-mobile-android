@@ -88,7 +88,7 @@ public class StorageHelper implements StorageKeys {
     }
 
     private void remove(StorageKey key) {
-        mSharedPreferences.edit().remove(key.toString());
+        mSharedPreferences.edit().remove(key.toString()).apply();
     }
 
     private String getString(StorageKey key) {
