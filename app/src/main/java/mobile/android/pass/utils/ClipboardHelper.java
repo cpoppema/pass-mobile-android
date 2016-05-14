@@ -11,16 +11,17 @@ import mobile.android.pass.R;
  */
 public class ClipboardHelper {
 
+    private static final String TAG = ClipboardHelper.class.toString();
+
     /**
-     * Function to add text to the clipboard with the app name as key.
+     * Function to add text to the clipboard4.
      * @param context
      * @param text
      */
-    public static void addToClipboard(Context context, String text) {
+    public static void copy(Context context, String text) {
         ClipboardManager clipboard = (ClipboardManager)
                 context.getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText(context.getString(R.string.app_name),
-                text);
+        ClipData clip = ClipData.newPlainText(TAG, text);
         clipboard.setPrimaryClip(clip);
     }
 }

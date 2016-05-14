@@ -4,7 +4,7 @@ import android.content.Context;
 
 import com.google.gson.GsonBuilder;
 
-import mobile.android.pass.utils.Storage;
+import mobile.android.pass.utils.StorageHelper;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -16,7 +16,8 @@ public class ApiService {
 
     public static String getApiUrl(Context context) {
 
-        String url = new Storage(context).getServerAddress();
+//        String url = new StorageHelper(context).getServerAddress();
+        String url = "";
 
         if (url.equals("")) {
             url = "http://localhost";

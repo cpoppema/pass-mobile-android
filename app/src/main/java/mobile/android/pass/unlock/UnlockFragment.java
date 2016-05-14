@@ -18,9 +18,13 @@ import android.widget.EditText;
 
 import mobile.android.pass.R;
 import mobile.android.pass.secrets.SecretsActivity;
+import mobile.android.pass.utils.PgpHelper;
+import mobile.android.pass.utils.StorageHelper;
 
 public class UnlockFragment extends DialogFragment {
     private static final String TAG = UnlockFragment.class.toString();
+
+    private StorageHelper mStorageHelper;
 
     public UnlockFragment() {
     }
@@ -30,6 +34,8 @@ public class UnlockFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
         setRetainInstance(true);
+
+        mStorageHelper = new StorageHelper(getActivity());
     }
 
     @NonNull
@@ -68,8 +74,8 @@ public class UnlockFragment extends DialogFragment {
                         // Validate passphrase.
                         boolean unlocked = false;
                         if (!passphrase.isEmpty()) {
-                            // TODO: validate passphrase
-                            unlocked = true;
+                            unlocked = PgpHelper.testPassphraseForKey(mStorageHelper.getKeyID(),
+                                    mStorageHelper.getPrivateKey(), passphrase);
                         }
 
                         Log.i(TAG, "Unlocked: " + Boolean.toString(unlocked));

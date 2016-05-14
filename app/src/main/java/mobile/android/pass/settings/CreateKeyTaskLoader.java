@@ -4,15 +4,18 @@ import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
 
-import mobile.android.pass.secrets.SecretsActivity;
+import org.spongycastle.openpgp.PGPSecretKey;
 
-public class CreateKeyTaskLoader extends AsyncTaskLoader<Object> {
+import mobile.android.pass.secrets.SecretsActivity;
+import mobile.android.pass.utils.PgpHelper;
+
+public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
 
     private static final String TAG = SecretsActivity.class.toString();
 
     private final String mKeyName;
     private final String mPassword;
-    private Object mKeyPair;
+    private PGPSecretKey mKeyPair;
 
     public CreateKeyTaskLoader(Context context, String keyName, String passphrase) {
         super(context);
@@ -22,7 +25,7 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<Object> {
     }
 
     @Override
-    public Object loadInBackground() {
+    public PGPSecretKey loadInBackground() {
         Log.d(TAG, "sleeping");
         try {
             // Simulate creating a strong keypair.
@@ -31,13 +34,12 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<Object> {
             return null;
         }
 
-        // TODO: create new keypair
-        mKeyPair = new Object();
+        mKeyPair = PgpHelper.generateKeyPair(mKeyName, mPassword);
         return mKeyPair;
     }
 
     @Override
-    public void deliverResult(Object keyPair) {
+    public void deliverResult(PGPSecretKey keyPair) {
         super.deliverResult(keyPair);
 
         if (isReset()) {

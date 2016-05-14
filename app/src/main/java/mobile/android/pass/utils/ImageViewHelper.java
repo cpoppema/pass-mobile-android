@@ -6,7 +6,7 @@ import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.widget.ImageView;
 
-public class CircularImageView {
+public class ImageViewHelper {
     public static void convertToCircularImageView(ImageView v) {
         int backgroundColor = ((ColorDrawable) v.getBackground()).getColor();
         Bitmap bitmap = Bitmap.createBitmap(v.getLayoutParams().width, v.getLayoutParams().height, Bitmap.Config.ARGB_8888);

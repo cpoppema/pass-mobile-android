@@ -34,9 +34,9 @@ public class SecretsResponse extends ApiResponse {
      * @param privateKey
      * @return
      */
-    public List<Secret> getSecrets(Context context, PGPPrivateKey privateKey) {
-        String secretsJson = decryptResponseData(context, privateKey);
-
-        return convertJsonToSecretList(secretsJson);
-    }
+//    public List<Secret> getSecrets(Context context, PGPPrivateKey privateKey) {
+//        String secretsJson = decryptResponseData(context, privateKey);
+//
+//        return convertJsonToSecretList(secretsJson);
+//    }
 }

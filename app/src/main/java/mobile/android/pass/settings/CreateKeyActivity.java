@@ -17,14 +17,17 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 
+import org.spongycastle.openpgp.PGPSecretKey;
+
 import mobile.android.pass.R;
 import mobile.android.pass.secrets.SecretsActivity;
+import mobile.android.pass.utils.StorageHelper;
 
-public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Object> {
+public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<PGPSecretKey> {
 
     private static final String TAG = SecretsActivity.class.toString();
 
-    private String PREF_KEY_KEY_NAME = "pref_key_key_name";
+    private StorageHelper mStorageHelper;
 
     private EditText mKeyNameView;
     private EditText mPassphraseView;
@@ -44,9 +47,9 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         mCreateKeyFormView = findViewById(R.id.generate_key_form);
 
         // Pre-fill key name if there is one.
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String keyName = sharedPreferences.getString(this.PREF_KEY_KEY_NAME, "");
-        if (!keyName.isEmpty()) {
+        mStorageHelper = new StorageHelper(this);
+        String keyName = mStorageHelper.getKeyName();
+        if (!TextUtils.isEmpty(keyName)) {
             mKeyNameView.setText(keyName);
         }
 
@@ -102,10 +105,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             focusView.requestFocus();
         } else {
             // Save key name.
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(this.PREF_KEY_KEY_NAME, keyName);
-            editor.commit();
+            mStorageHelper.putKeyName(keyName);
 
             getSupportLoaderManager().initLoader(0, null, this);
         }
@@ -139,21 +139,24 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     @Override
-    public Loader<Object> onCreateLoader(int id, Bundle args) {
+    public Loader<PGPSecretKey> onCreateLoader(int id, Bundle args) {
         Log.d(TAG, "onCreateLoader");
         showProgress(true);
         return new CreateKeyTaskLoader(this, mKeyNameView.getText().toString(), mPassphraseView.getText().toString());
     }
 
     @Override
-    public void onLoadFinished(Loader<Object> loader, Object data) {
+    public void onLoadFinished(Loader<PGPSecretKey> loader, PGPSecretKey keyPair) {
         Log.d(TAG, "onLoadFinished");
 
 
-        if (data == null) {
+        if (keyPair == null) {
             showProgress(false);
             // TODO: Try again ?
         } else {
+            // Save key data.
+            mStorageHelper.putKeyPair(keyPair);
+
             // Close activity and go back.
             Log.d(TAG, "finish()");
             mProgressDialog.dismiss();
@@ -162,7 +165,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     @Override
-    public void onLoaderReset(Loader<Object> loader) {
+    public void onLoaderReset(Loader<PGPSecretKey> loader) {
         Log.d(TAG, "onLoaderReset");
 
         // TODO: try again ?

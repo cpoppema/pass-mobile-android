@@ -12,7 +12,7 @@ import android.widget.SectionIndexer;
 import android.widget.TextView;
 
 import mobile.android.pass.R;
-import mobile.android.pass.utils.CircularImageView;
+import mobile.android.pass.utils.ImageViewHelper;
 
 public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
@@ -94,7 +94,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             mActions = v.findViewById(R.id.item_secret_actions);
 
             // Convert mIcon to a circular ImageView.
-            CircularImageView.convertToCircularImageView(mIcon);
+            ImageViewHelper.convertToCircularImageView(mIcon);
         }
 
         public View getActions() {

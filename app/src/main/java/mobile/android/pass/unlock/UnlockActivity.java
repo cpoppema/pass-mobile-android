@@ -9,6 +9,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,6 +18,7 @@ import android.view.View;
 
 import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
+import mobile.android.pass.utils.StorageHelper;
 
 public class UnlockActivity extends AppCompatActivity {
     private static final String TAG = UnlockActivity.class.toString();
@@ -27,6 +29,7 @@ public class UnlockActivity extends AppCompatActivity {
 
     private AlertDialog mDialog;
     private int mDialogTag = NO_DIALOG_TAG;
+    private StorageHelper mStorageHelper;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -34,6 +37,8 @@ public class UnlockActivity extends AppCompatActivity {
         Log.i(TAG, "onCreate");
 
         setContentView(R.layout.activity_unlock);
+
+        mStorageHelper = new StorageHelper(this);
 
         if (savedInstanceState == null) {
             // Show initial dialog.
@@ -136,8 +141,7 @@ public class UnlockActivity extends AppCompatActivity {
     // Show either unlock or settings dialog.
     private void showDialog() {
         if (mDialogTag == NO_DIALOG_TAG) {
-            // TODO: Make conditional: is a public key already set in preferences or not.
-            boolean hasKeypair = true;
+            boolean hasKeypair = !TextUtils.isEmpty(mStorageHelper.getKeyID());
             if (hasKeypair) {
                 showUnlockDialog();
             } else {
