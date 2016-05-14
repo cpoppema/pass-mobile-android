@@ -2,8 +2,7 @@ package mobile.android.pass.settings;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+import android.content.DialogInterface;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
@@ -20,12 +19,11 @@ import android.widget.EditText;
 import org.spongycastle.openpgp.PGPSecretKey;
 
 import mobile.android.pass.R;
-import mobile.android.pass.secrets.SecretsActivity;
 import mobile.android.pass.utils.StorageHelper;
 
 public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<PGPSecretKey> {
 
-    private static final String TAG = SecretsActivity.class.toString();
+    private static final String TAG = CreateKeyActivity.class.toString();
 
     private StorageHelper mStorageHelper;
 
@@ -37,6 +35,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate");
+
         setContentView(R.layout.activity_generate_key);
 
         // Add back button to action bar.
@@ -64,6 +64,43 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.i(TAG, "onSaveInstanceState");
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Log.i(TAG, "onRestoreInstanceState");
+        Log.i(TAG, "onRestoreInstanceState - savedInstanceState == null: " + Boolean.toString(savedInstanceState == null));
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, "onPause");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume");
+    }
+
+    @Override
+    public void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        Log.i(TAG, "onAttachedToWindow");
+    }
+
+    @Override
+    protected void onResumeFragments() {
+        super.onResumeFragments();
+        Log.i(TAG, "onResumeFragments");
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
@@ -75,6 +112,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     private void createKeypair() {
+        Log.i(TAG, "createKeypair");
+
         // Reset errors.
         mKeyNameView.setError(null);
         mPassphraseView.setError(null);
@@ -91,6 +130,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             mPassphraseView.setError(getString(R.string.error_field_required));
             focusView = mPassphraseView;
             cancel = true;
+            Log.i(TAG, "cancel: passphrase");
         }
 
         // Check for a valid key name.
@@ -98,6 +138,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             mKeyNameView.setError(getString(R.string.error_field_required));
             focusView = mKeyNameView;
             cancel = true;
+            Log.i(TAG, "cancel: keyName");
         }
         if (cancel) {
             // There was an error; don't attempt anything and focus the first
@@ -107,7 +148,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             // Save key name.
             mStorageHelper.putKeyName(keyName);
 
-            getSupportLoaderManager().initLoader(0, null, this);
+            getSupportLoaderManager().restartLoader(0, null, this);
         }
     }
 
@@ -118,6 +159,17 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             mProgressDialog.setIndeterminate(true);
             mProgressDialog.setMessage(getString(R.string.progress_generating_key));
             mProgressDialog.create();
+            mProgressDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialogInterface) {
+                    Log.i(TAG, "progress dialog dismissed, cancel loader");
+                    if (getSupportLoaderManager().hasRunningLoaders()) {
+                        getSupportLoaderManager().getLoader(0).cancelLoad();
+                    }
+
+                    showProgress(false);
+                }
+            });
         }
 
         if (show) {
@@ -134,7 +186,13 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             // Show progress dialog.
             mProgressDialog.show();
         } else {
-            mProgressDialog.dismiss();
+            // Hide progress dialog.
+            if (mProgressDialog.isShowing()) {
+                mProgressDialog.dismiss();
+            }
+
+            // Show form.
+            mCreateKeyFormView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -147,18 +205,16 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
 
     @Override
     public void onLoadFinished(Loader<PGPSecretKey> loader, PGPSecretKey keyPair) {
-        Log.d(TAG, "onLoadFinished, no keypair: " + Boolean.toString(keyPair == null));
-
+        Log.d(TAG, "onLoadFinished");
 
         if (keyPair == null) {
             showProgress(false);
-            // TODO: Try again ?
+            // TODO: Try again ? automatically ?
         } else {
             // Save key data.
             mStorageHelper.putKeyPair(keyPair);
 
             // Close activity and go back.
-            Log.d(TAG, "finish()");
             mProgressDialog.dismiss();
             finish();
         }

@@ -2,6 +2,7 @@ package mobile.android.pass.utils;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
@@ -38,6 +39,9 @@ import java.util.Date;
  * Class for generating PGP key pairs and decrypting data.
  */
 public class PgpHelper {
+
+    private static final String TAG = PgpHelper.class.toString();
+
     private static final int KEY_PAIR_BITS = 2048;
 
     private Context mContext;
@@ -134,6 +138,8 @@ public class PgpHelper {
     }
 
     public static String getKeyID(PGPSecretKey secretKey) {
+        Log.d(TAG, "" + secretKey.getKeyID());
+        Log.d(TAG, "" + Long.toString(secretKey.getKeyID()));
         return Long.toString(secretKey.getKeyID());
     }
 

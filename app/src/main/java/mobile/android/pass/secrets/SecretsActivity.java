@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
 
-public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
+public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, SearchView.OnCloseListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
     private static final String TAG = SecretsActivity.class.toString();
 
     private final int LOADER_ID_REFRESH = 0;
@@ -131,6 +131,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         MenuItem item = menu.findItem(R.id.action_search);
         mSearchView = (SearchView) MenuItemCompat.getActionView(item);
+        mSearchView.setOnCloseListener(this);
         mSearchView.setOnQueryTextListener(this);
         mSearchView.setSubmitButtonEnabled(false);
 //        mSearchView.setIconifiedByDefault(true);
@@ -222,6 +223,14 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         }
         mCurFilter = newFilter;
         getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+        return true;
+    }
+
+    @Override
+    public boolean onClose() {
+        if (!TextUtils.isEmpty(mSearchView.getQuery())) {
+            mSearchView.setQuery(null, true);
+        }
         return true;
     }
 
