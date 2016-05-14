@@ -27,6 +27,7 @@ import org.spongycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -138,9 +139,7 @@ public class PgpHelper {
     }
 
     public static String getKeyID(PGPSecretKey secretKey) {
-        Log.d(TAG, "" + secretKey.getKeyID());
-        Log.d(TAG, "" + Long.toString(secretKey.getKeyID()));
-        return Long.toString(secretKey.getKeyID());
+        return Long.toHexString(secretKey.getKeyID()).toUpperCase();
     }
 
     private static PGPSecretKeyRingCollection extractSecretKeyCollection(byte[] privateKey) {
@@ -160,7 +159,7 @@ public class PgpHelper {
     private static PGPSecretKey getSecretKey(String keyID, byte[] privateKey) {
         PGPSecretKeyRingCollection keyRing = extractSecretKeyCollection(privateKey);
         try {
-            return keyRing.getSecretKey(new Long(keyID));
+            return keyRing.getSecretKey(new BigInteger(keyID, 16).longValue());
         } catch (PGPException e) {
             e.printStackTrace();
         }
