@@ -12,7 +12,7 @@ import java.nio.charset.Charset;
 /**
  * Class that acts as middleware between a storage engine and the app.
  */
-public class StorageHelper implements StorageKeys {
+public class StorageHelper {
     private Context mContext;
     private SharedPreferences mSharedPreferences;
 

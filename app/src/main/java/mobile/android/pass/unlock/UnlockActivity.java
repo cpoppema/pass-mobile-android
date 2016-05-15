@@ -45,7 +45,7 @@ public class UnlockActivity extends AppCompatActivity {
             showDialog();
         } else {
             // Restore open dialog if any.
-            switch (savedInstanceState.getInt("mDialogTag")) {
+            switch (mDialogTag) {
                 case NO_DIALOG_TAG:
                     // There was no dialog visible.
                     Log.i(TAG, "mDialogTag: NO_DIALOG_TAG");
@@ -87,7 +87,10 @@ public class UnlockActivity extends AppCompatActivity {
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         Log.i(TAG, "onRestoreInstanceState");
-        Log.i(TAG, "onRestoreInstanceState - savedInstanceState == null: " + Boolean.toString(savedInstanceState == null));
+
+        if (savedInstanceState != null) {
+            mDialogTag = savedInstanceState.getInt("mDialogTag");
+        }
     }
 
     @Override

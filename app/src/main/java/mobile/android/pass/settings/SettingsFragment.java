@@ -8,6 +8,7 @@ import android.preference.PreferenceGroup;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,6 +23,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     private static final String TAG = SettingsFragment.class.toString();
 
     private StorageHelper mStorageHelper;
+    private boolean mContextMenuOpen = false;
 
     public SettingsFragment() {
         // Required empty public constructor
@@ -30,46 +32,130 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate");
+        setRetainInstance(true);
+
+        mStorageHelper = new StorageHelper(getActivity());
 
         // Load the preferences from an XML resource.
         addPreferencesFromResource(R.xml.activity_settings);
 
         // Load summaries for preferences.
         initSummaries();
+        setEnabledStateForKeyID();
 
-        // Enable interaction for PREF_KEY_PUBLIC_KEY_ID if there is a key.
-        mStorageHelper = new StorageHelper(getActivity());
-        String keyId = mStorageHelper.getKeyID();
-        Preference keyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
-        if(!TextUtils.isEmpty(keyId)) {
-            keyIdPreference.setEnabled(true);
-            keyIdPreference.setOnPreferenceClickListener(this);
-        }
-
-        // Update summary on change.
+        // Update summaries on change.
         getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        Log.i(TAG, "onViewCreated");
+
+        // getView() returns null in onCreate.
+        registerForContextMenu(view);
+
+        if (mContextMenuOpen) {
+            view.post(new Runnable() {
+                @Override
+                public void run() {
+                    showContextMenu();
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.i(TAG, "onSaveInstanceState");
+
+        outState.putBoolean("mContextMenuOpen", mContextMenuOpen);
+    }
+
+    @Override
+    public void onViewStateRestored(Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        Log.i(TAG, "onViewStateRestored");
+
+        if (savedInstanceState != null){
+            mContextMenuOpen = savedInstanceState.getBoolean("mContextMenuOpen");
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.i(TAG, "onDestroy");
 
+        // FIXME: Close open edittext's, somehow... https://code.google.com/p/android/issues/detail?id=185211
+
+        // These listeners will stack, so unregister.
         getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
     }
 
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-        registerForContextMenu(getView());
+    private void showContextMenu() {
+        mContextMenuOpen = true;
+        getActivity().openContextMenu(getView());
     }
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
+        Log.i(TAG, "onActivityCreated");
 
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.menu_key, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        mContextMenuOpen = false;
+
+//        if(getUserVisibleHint()) {
+        switch (item.getItemId()) {
+            case R.id.action_copy_key:
+                Log.i(TAG, "Public key action: " + item.toString());
+                String keyToCopy = mStorageHelper.getArmoredPublicKey();
+                Log.i(TAG, "Public key: " + keyToCopy);
+                ClipboardHelper.copy(getActivity(), keyToCopy);
+                return true;
+            case R.id.action_copy_key_id:
+                Log.i(TAG, "Public key action: " + item.toString());
+                String keyID = mStorageHelper.getKeyID();
+                Log.i(TAG, "Key ID: " + keyID);
+                ClipboardHelper.copy(getActivity(), keyID);
+                return true;
+            case R.id.action_show_key:
+                // TODO: show key
+                Log.i(TAG, "Public key action: " + item.toString());
+                String keyToShow = mStorageHelper.getArmoredPublicKey();
+                Log.i(TAG, "Public key: " + keyToShow);
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
+//        }
+//        return false;
+    }
+
+    public void onContextMenuClosed(Menu menu) {
+        Log.i(TAG, "onContextMenuClosed");
+        mContextMenuOpen = false;
+    }
+
+    // Enable interaction for PREF_KEY_PUBLIC_KEY_ID if there is a key.
+    private void setEnabledStateForKeyID() {
+        Preference keyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
+        String keyId = mStorageHelper.getKeyID();
+        if(!TextUtils.isEmpty(keyId)) {
+            keyIdPreference.setEnabled(true);
+            keyIdPreference.setOnPreferenceClickListener(this);
+        } else {
+            keyIdPreference.setEnabled(false);
+            keyIdPreference.setOnPreferenceClickListener(null);
+        }
     }
 
     @Override
@@ -79,16 +165,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         Log.i(TAG, "Preference changed: " + key);
 
         if(TextUtils.equals(key, StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
-            // Enable interaction for PREF_KEY_PUBLIC_KEY_ID if there is a key.
-            Preference keyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
-            String keyId = mStorageHelper.getKeyID();
-            if(!TextUtils.isEmpty(keyId)) {
-                keyIdPreference.setEnabled(true);
-                keyIdPreference.setOnPreferenceClickListener(this);
-            } else {
-                keyIdPreference.setEnabled(false);
-                keyIdPreference.setOnPreferenceClickListener(null);
-            }
+            setEnabledStateForKeyID();
         }
     }
 
@@ -122,37 +199,8 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     @Override
     public boolean onPreferenceClick(Preference preference) {
         if(preference.getKey().equals(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
-            getActivity().openContextMenu(getView());
+            showContextMenu();
             return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        if(getUserVisibleHint()) {
-            switch (item.getItemId()) {
-                case R.id.action_copy_key:
-                    Log.i(TAG, "Public key action: " + item.toString());
-                    String keyToCopy = mStorageHelper.getArmoredPublicKey();
-                    Log.i(TAG, "Public key: " + keyToCopy);
-                    ClipboardHelper.copy(getActivity(), keyToCopy);
-                    return true;
-                case R.id.action_copy_key_id:
-                    Log.i(TAG, "Public key action: " + item.toString());
-                    String keyID = mStorageHelper.getKeyID();
-                    Log.i(TAG, "Key ID: " + keyID);
-                    ClipboardHelper.copy(getActivity(), keyID);
-                    return true;
-                case R.id.action_show_key:
-                    // TODO: show key
-                    Log.i(TAG, "Public key action: " + item.toString());
-                    String keyToShow = mStorageHelper.getArmoredPublicKey();
-                    Log.i(TAG, "Public key: " + keyToShow);
-                    return true;
-                default:
-                    return super.onContextItemSelected(item);
-            }
         }
         return false;
     }
