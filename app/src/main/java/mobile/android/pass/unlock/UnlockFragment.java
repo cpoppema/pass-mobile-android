@@ -74,8 +74,7 @@ public class UnlockFragment extends DialogFragment {
                         // Validate passphrase.
                         boolean unlocked = false;
                         if (!passphrase.isEmpty()) {
-                            unlocked = PgpHelper.testPassphraseForKey(mStorageHelper.getKeyID(),
-                                    mStorageHelper.getPrivateKey(), passphrase);
+                            unlocked = PgpHelper.testPassphraseForKey(mStorageHelper.getPrivateKey(), passphrase);
                         }
 
                         Log.i(TAG, "Unlocked: " + Boolean.toString(unlocked));
@@ -86,7 +85,7 @@ public class UnlockFragment extends DialogFragment {
 
                             // Move on.
                             Log.i(TAG, "Start SecretsActivity");
-                            startActivity(new Intent(getActivity(), SecretsActivity.class));
+                            startActivity(new Intent(getActivity(), SecretsActivity.class).putExtra("mPassphrase", passphrase));
                         } else {
                             // Give feedback.
                             Log.i(TAG, "Show input feedback");

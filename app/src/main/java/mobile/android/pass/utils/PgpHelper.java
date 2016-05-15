@@ -12,6 +12,7 @@ import org.spongycastle.openpgp.PGPException;
 import org.spongycastle.openpgp.PGPKeyPair;
 import org.spongycastle.openpgp.PGPPublicKey;
 import org.spongycastle.openpgp.PGPSecretKey;
+import org.spongycastle.openpgp.PGPSecretKeyRing;
 import org.spongycastle.openpgp.PGPSecretKeyRingCollection;
 import org.spongycastle.openpgp.PGPSignature;
 import org.spongycastle.openpgp.PGPUtil;
@@ -35,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.Date;
+import java.util.Iterator;
 
 /**
  * Class for generating PGP key pairs and decrypting data.
@@ -45,17 +47,17 @@ public class PgpHelper {
 
     private static final int KEY_PAIR_BITS = 2048;
 
-    private Context mContext;
-    private PGPSecretKeyRingCollection mSecretKeyCollection = null;
-    private StorageHelper mStorageHelper;
-    private long mSecretKeyId = -1;
-
     // Make sure BouncyCastle is set as security provider.
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public static PGPSecretKey generateKeyPair(String name, String password) {
+    /**
+     * Function to generate a KeyPair.
+     * @param name Name of the KeyPair.
+     * @param passphrase Passphrase required to unlock the key.
+     */
+    public static PGPSecretKey generateKeyPair(String name, String passphrase) {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "SC");
             generator.initialize(KEY_PAIR_BITS);
@@ -77,26 +79,7 @@ public class PgpHelper {
                     new JcePBESecretKeyEncryptorBuilder(
                             PGPEncryptedData.CAST5, sha1Calc)
                             .setProvider("SC")
-                            .build(password.toCharArray()));
-
-//            // Convert PGPPublicKey to armored string.
-//            ByteArrayOutputStream pubStream = new ByteArrayOutputStream();
-//            ArmoredOutputStream pubArmorStream = new ArmoredOutputStream(pubStream);
-//            secretKey.getArmoredPublicKey().encode(pubArmorStream);
-//            pubArmorStream.close();
-//            String publicKeyString = new String(pubStream.toByteArray(), Charset.forName("UTF-8"));
-//
-//            // Convert PGPSecretKey to armored string.
-//            ByteArrayOutputStream secretStream = new ByteArrayOutputStream();
-//            ArmoredOutputStream secretArmorStream = new ArmoredOutputStream(secretStream);
-//            secretKey.encode(secretArmorStream);
-//            secretArmorStream.close();
-//            String secretKeyString = new String(secretStream.toByteArray(), Charset.forName("UTF-8"));
-
-//            mStorageHelper.setPublicKeyName(name);
-//            mStorageHelper.setPublicKey(publicKeyString);
-//            mStorageHelper.setSecretKey(secretKeyString);
-//            mStorageHelper.setSecretKeyId(secretKey.getKeyID());
+                            .build(passphrase.toCharArray()));
 
             return secretKey;
         } catch (NoSuchAlgorithmException e) {
@@ -138,10 +121,18 @@ public class PgpHelper {
         return null;
     }
 
+    /**
+     * Function to get the (hexadecimal) key id from the given key.
+     * @return
+     */
     public static String getKeyID(PGPSecretKey secretKey) {
         return Long.toHexString(secretKey.getKeyID()).toUpperCase();
     }
 
+    /**
+     * Function to get the SecretKeyCollection from the private key.
+     * @return
+     */
     private static PGPSecretKeyRingCollection extractSecretKeyCollection(byte[] privateKey) {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(privateKey);
         try {
@@ -155,39 +146,38 @@ public class PgpHelper {
 
         return null;
     }
-
-    private static PGPSecretKey getSecretKey(String keyID, byte[] privateKey) {
+    private static PGPSecretKey getSecretKey(byte[] privateKey) {
         PGPSecretKeyRingCollection keyRing = extractSecretKeyCollection(privateKey);
+        Iterator<PGPSecretKeyRing> keyRingIterator = keyRing.getKeyRings();
+        PGPSecretKey secretKey = keyRingIterator.next().getSecretKey();
+        return secretKey;
+    }
+
+    /**
+     * Function to turn the private key into one that can be used for decrypting.
+     * @param privateKey
+     * @param passphrase Passphrase that unlocks the private key.
+     * @return
+     */
+    public static PGPSecretKey extractPrivateKey(byte[] privateKey, String passphrase) {
+        PGPSecretKey secretKey = getSecretKey(privateKey);
         try {
-            return keyRing.getSecretKey(new BigInteger(keyID, 16).longValue());
-        } catch (PGPException e) {
+            PBESecretKeyDecryptor decrypterFactory = new JcePBESecretKeyDecryptorBuilder()
+                    .setProvider("SC")
+                    .build(passphrase.toCharArray());
+            secretKey.extractPrivateKey(decrypterFactory);
+            return secretKey;
+        } catch(PGPException e){
             e.printStackTrace();
         }
 
         return null;
     }
 
-    public static boolean testPassphraseForKey(String keyID, byte[] privateKey, String passphrase) {
-        boolean unlocked = false;
-
-        PGPSecretKey secretKey = getSecretKey(keyID, privateKey);
-        if (secretKey == null) {
-            // TODO: raise exception to show a different warning then "invalid passphrase"
-        } else {
-            try {
-                PBESecretKeyDecryptor decrypterFactory = new JcePBESecretKeyDecryptorBuilder()
-                        .setProvider("SC")
-                        .build(passphrase.toCharArray());
-                secretKey.extractPrivateKey(decrypterFactory);
-                unlocked = true;
-            } catch(PGPException e){
-                e.printStackTrace();
-            }
-        }
-
+    public static boolean testPassphraseForKey(byte[] privateKey, String passphrase) {
+        boolean unlocked = extractPrivateKey(privateKey, passphrase) != null;
         return unlocked;
     }
-
 
 //    /**
 //     * Constructor.

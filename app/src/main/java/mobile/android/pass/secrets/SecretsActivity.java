@@ -20,10 +20,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
+import org.spongycastle.openpgp.PGPSecretKey;
+
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
+import mobile.android.pass.utils.PgpHelper;
+import mobile.android.pass.utils.StorageHelper;
 
 public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, SearchView.OnCloseListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
     private static final String TAG = SecretsActivity.class.toString();
@@ -31,6 +36,14 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     private final int LOADER_ID_REFRESH = 0;
     private final int LOADER_ID_FILTER = 1;
     private final int NO_POPUP = -1;
+
+    protected final int MAX_TIME_ACTIVE = 20;
+
+    protected String mPassphrase;
+    protected int mTimeActivated = -1;
+    protected PGPSecretKey mSecretKey;
+
+    private StorageHelper mStorageHelper;
 
     // UI references.
     private SwipeRefreshLayout mSwipeRefreshLayout;
@@ -52,15 +65,17 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         setContentView(R.layout.activity_secrets);
 
+        mStorageHelper = new StorageHelper(this);
+
         // Add back button to action bar.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        // Restore from saved state.
-        if (savedInstanceState != null) {
-            mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
-            mCurFilter = savedInstanceState.getString("mCurFilter");
-            mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
+        if(!TextUtils.isEmpty(getIntent().getStringExtra("mPassphrase"))) {
+            mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
+            mPassphrase = getIntent().getStringExtra("mPassphrase");
+            getIntent().removeExtra("mPassphrase");
         }
+        Log.d(TAG, "mPassphrase: " + mPassphrase);
 
         // Create the cursor adapter.
         mSecretsAdapter = new SecretsAdapter(this);
@@ -103,13 +118,16 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         outState.putParcelableArrayList("mSecrets", mSecrets);
         outState.putString("mCurFilter", mCurFilter);
 
+        mListViewState = mListView.onSaveInstanceState();
+        outState.putParcelable("mListViewState", mListViewState);
+
         outState.putInt("mPopupMenuViewPosition", mPopupMenuViewPosition);
         if (mPopupMenu != null) {
             mPopupMenu.dismiss();
         }
 
-        mListViewState = mListView.onSaveInstanceState();
-        outState.putParcelable("mListViewState", mListViewState);
+        outState.putString("mPassphrase", mPassphrase);
+        outState.putInt("mTimeActivated", mTimeActivated);
     }
 
     @Override
@@ -120,6 +138,26 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
         mCurFilter = savedInstanceState.getString("mCurFilter");
         mListViewState = savedInstanceState.getParcelable("mListViewState");
+        mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
+        mTimeActivated = savedInstanceState.getInt("mTimeActivated");
+        mPassphrase = savedInstanceState.getString("mPassphrase");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, "onPause");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume");
+
+        finishOrStay();
+
+        mSecretKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
+        Log.d(TAG, "Unlocked key: " + Long.toHexString(mSecretKey.getKeyID()));
     }
 
     @Override
@@ -308,6 +346,18 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // above is about to be closed. We need to make sure we are no
         // longer using it.
         mSecretsAdapter.swapCursor(null);
+    }
+
+    private void finishOrStay() {
+        int timeActive = ((int) (Calendar.getInstance().getTimeInMillis() / 1000L)) - mTimeActivated;
+        Log.d(TAG, "It's been: " + Integer.toString(timeActive));
+        if (mPassphrase == null || timeActive > MAX_TIME_ACTIVE) {
+            Log.d(TAG, "Finish" );
+            mPassphrase = null;
+            finish();
+        } else {
+            Log.d(TAG, "Stay");
+        }
     }
 
     private void showPopup(int popupMenuViewPosition) {
