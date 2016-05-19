@@ -19,14 +19,17 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
-import org.spongycastle.openpgp.PGPSecretKey;
+import org.spongycastle.openpgp.PGPPrivateKey;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 
 import mobile.android.pass.R;
+import mobile.android.pass.api.Api;
 import mobile.android.pass.settings.SettingsActivity;
+import mobile.android.pass.utils.ClipboardHelper;
 import mobile.android.pass.utils.PgpHelper;
 import mobile.android.pass.utils.StorageHelper;
 
@@ -41,8 +44,9 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
     protected String mPassphrase;
     protected int mTimeActivated = -1;
-    protected PGPSecretKey mSecretKey;
+    protected PGPPrivateKey mPrivateKey;
 
+    private Api mApi;
     private StorageHelper mStorageHelper;
 
     // UI references.
@@ -150,14 +154,27 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+
+        // TODO: stop http requests when activity stops
+//        if (mApi != null) {
+//            mApi.cancelAll();
+//        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         Log.i(TAG, "onResume");
 
-        finishOrStay();
+        boolean finish = finishOrStay();
+        if (!finish) {
+            mPrivateKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
+            Log.d(TAG, "Unlocked key: " + Long.toHexString(mPrivateKey.getKeyID()));
 
-        mSecretKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
-        Log.d(TAG, "Unlocked key: " + Long.toHexString(mSecretKey.getKeyID()));
+//            mApi = new Api(this, mPrivateKey);
+        }
     }
 
     @Override
@@ -272,7 +289,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         switch (id) {
             case LOADER_ID_REFRESH:
                 // Fetch new set of secrets.
-                return new SecretsTaskLoader(this);
+                return new SecretsTaskLoader(this, mApi);
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
                 // FIXME: the first item is missing after search and clearing filter ?!
@@ -294,12 +311,15 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             } else {
                 mSecrets.clear();
             }
-            data.moveToFirst();
-            while (data.moveToNext()) {
-                Secret secret = new Secret(data);
-                mSecrets.add(secret);
+
+            if (data != null ) {
+                data.moveToFirst();
+                while (data.moveToNext()) {
+                    Secret secret = new Secret(data);
+                    mSecrets.add(secret);
+                }
+                data.moveToFirst();
             }
-            data.moveToFirst();
         }
 
         // Swap the new cursor in. (The framework will take care of closing the
@@ -339,15 +359,17 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSecretsAdapter.swapCursor(null);
     }
 
-    private void finishOrStay() {
+    private boolean finishOrStay() {
         int timeActive = ((int) (Calendar.getInstance().getTimeInMillis() / 1000L)) - mTimeActivated;
         Log.d(TAG, "It's been: " + Integer.toString(timeActive));
         if (mPassphrase == null || timeActive > MAX_TIME_ACTIVE) {
             Log.d(TAG, "Finish" );
             mPassphrase = null;
             finish();
+            return true;
         } else {
             Log.d(TAG, "Stay");
+            return false;
         }
     }
 
@@ -374,7 +396,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         }
 
         SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) view.getTag();
-        View anchorView = holder.getActions();
+        final View anchorView = holder.getActions();
         Log.d(TAG, "anchorView.width: " + anchorView.getWidth()); // "0" for getView()
 
         // Inflating the Popup using xml file.
@@ -387,13 +409,39 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_copy_secret_password:
-                        Log.i(TAG, "Clicked on " + item.getTitle() + ": ********");
+                        Log.i(TAG, "Clicked on " + item.getTitle() + "");
+
+                        // TODO: get password from api
+                        String password = null;
+//                        String password = mApi.getSecret(secret);
+                        if (password != null) {
+                            ClipboardHelper.copy(anchorView.getContext(), password);
+
+                            Toast.makeText(getApplicationContext(),
+                                    getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
+                                    .show();
+                        } else {
+                            Toast.makeText(getApplicationContext(),
+                                    getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
+                                    .show();
+                        }
                         break;
                     case R.id.action_copy_secret_username:
                         Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getUsername());
+
+                        ClipboardHelper.copy(anchorView.getContext(), secret.getUsername());
+
+                       Toast.makeText(getApplicationContext(),
+                               getString(R.string.toast_copy_secret_username), Toast.LENGTH_SHORT)
+                               .show();
                         break;
                     case R.id.action_copy_secret_website:
                         Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getDomain());
+                        ClipboardHelper.copy(anchorView.getContext(), secret.getDomain());
+
+                        Toast.makeText(getApplicationContext(),
+                                getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
+                                .show();
                         break;
                 }
                 return true;

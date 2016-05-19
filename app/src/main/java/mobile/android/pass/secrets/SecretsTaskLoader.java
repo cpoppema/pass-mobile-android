@@ -12,19 +12,24 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 
+import mobile.android.pass.api.Api;
+
 public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
 
     private static final String TAG = SecretsActivity.class.toString();
     private Cursor mCursor;
     private String mFilter;
     private ArrayList<Secret> mOriginalSecrets;
+    private Api mApi;
 
-    public SecretsTaskLoader(Context context) {
+    public SecretsTaskLoader(Context context, Api api) {
         super(context);
+
+        mApi = api;
     }
 
     public SecretsTaskLoader(Context context, String filter, ArrayList<Secret> secrets) {
-        this(context);
+        super(context);
 
         mFilter = filter;
         mOriginalSecrets = secrets;
@@ -43,56 +48,64 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
                 return null;
             }
 
-            // Fetching some data, data has now returned
-            String json = "[\n";
-            char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-            int listSize = 26 * 10;
-            for (int i = 0; i < alphabet.length; i++) {
-                for (int j = 0; j < listSize / alphabet.length; j++) {
-                    json += "  {\n" +
-                            "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
-                            "    \"path\": \"gmail.com\",\n" +
-                            "    \"username\": \"rcaldwell\",\n" +
-                            "    \"username_normalized\": \"rcaldwell\"\n" +
-                            "  }";
-                    if ((i * listSize / alphabet.length + j) < listSize - 1) {
-                        json += ",";
+//            if (mApi != null) {
+//                secrets = mApi.getSecrets();
+//            } else {
+                // Fetching some data, data has now returned
+                String json = "[\n";
+                char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+                int listSize = 26 * 10;
+                for (int i = 0; i < alphabet.length; i++) {
+                    for (int j = 0; j < listSize / alphabet.length; j++) {
+                        json += "  {\n" +
+                                "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
+                                "    \"path\": \"gmail.com\",\n" +
+                                "    \"username\": \"rcaldwell\",\n" +
+                                "    \"username_normalized\": \"rcaldwell\"\n" +
+                                "  }";
+                        if ((i * listSize / alphabet.length + j) < listSize - 1) {
+                            json += ",";
+                        }
                     }
                 }
-            }
-            json += "]";
+                json += "]";
 
-            JSONArray jsonArray = null;
-            try {
-                jsonArray = new JSONArray(json);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            if (jsonArray != null) {
-                secrets = Secret.fromJson(jsonArray);
-            }
+                JSONArray jsonArray = null;
+                try {
+                    jsonArray = new JSONArray(json);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                if (jsonArray != null) {
+                    secrets = Secret.fromJson(jsonArray);
+                }
+//            }
+
         } else {
             Log.d(TAG, "NOT sleeping");
             secrets = mOriginalSecrets;
         }
 
-        int id = 0;
-        String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
-        MatrixCursor cursor = new MatrixCursor(columns);
-        int size = secrets.size();
-        for(int i = 0; i < size; i++) {
-            Secret secret = secrets.get(i);
-            if(secret.isMatch(mFilter)) {
-                MatrixCursor.RowBuilder builder = cursor.newRow();
-                builder.add(BaseColumns._ID, id++);
-                builder.add(Secret.DOMAIN, secret.getDomain());
-                builder.add(Secret.PATH, secret.getPath());
-                builder.add(Secret.USERNAME, secret.getUsername());
-                builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+        MatrixCursor cursor = null;
+        if (secrets != null) {
+            int id = 0;
+            String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
+            cursor = new MatrixCursor(columns);
+            int size = secrets.size();
+            for (int i = 0; i < size; i++) {
+                Secret secret = secrets.get(i);
+                if (secret.isMatch(mFilter)) {
+                    MatrixCursor.RowBuilder builder = cursor.newRow();
+                    builder.add(BaseColumns._ID, id++);
+                    builder.add(Secret.DOMAIN, secret.getDomain());
+                    builder.add(Secret.PATH, secret.getPath());
+                    builder.add(Secret.USERNAME, secret.getUsername());
+                    builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+                }
             }
-        }
 
-        cursor.moveToFirst();
+            cursor.moveToFirst();
+        }
 
         return cursor;
     }
