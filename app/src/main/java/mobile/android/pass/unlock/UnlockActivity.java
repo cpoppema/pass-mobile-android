@@ -21,12 +21,10 @@ import mobile.android.pass.settings.SettingsActivity;
 import mobile.android.pass.utils.StorageHelper;
 
 public class UnlockActivity extends AppCompatActivity {
-    private static final String TAG = UnlockActivity.class.toString();
-
     public static final int NO_DIALOG_TAG = -1;
     public static final int SETTINGS_DIALOG_TAG = 0;
     public static final int UNLOCK_DIALOG_TAG = 1;
-
+    private static final String TAG = UnlockActivity.class.toString();
     private AlertDialog mDialog;
     private int mDialogTag = NO_DIALOG_TAG;
     private StorageHelper mStorageHelper;
@@ -193,7 +191,7 @@ public class UnlockActivity extends AppCompatActivity {
                 mDialogTag = SETTINGS_DIALOG_TAG;
             }
         });
-        
+
         mDialog.show();
     }
 }

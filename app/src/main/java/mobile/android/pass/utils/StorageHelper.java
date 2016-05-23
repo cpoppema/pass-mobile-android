@@ -1,11 +1,11 @@
 package mobile.android.pass.utils;
 
+import org.spongycastle.openpgp.PGPSecretKey;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
-
-import org.spongycastle.openpgp.PGPSecretKey;
 
 import java.nio.charset.Charset;
 
@@ -16,38 +16,8 @@ public class StorageHelper {
     private Context mContext;
     private SharedPreferences mSharedPreferences;
 
-    public enum StorageKey {
-        PUBLIC_KEY_LEGACY("public"),
-        PUBLIC_KEY_NAME_LEGACY("public_name"),
-        SECRET_KEY_LEGACY("secret"),
-        SECRET_KEY_ID_LEGACY("secret_id"),
-        SERVER_ADDRESS_LEGACY("server"),
-
-        PRIVATE_KEY("prey_key_private_key"),
-        PUBLIC_KEY("prey_key_public_key"),
-        PUBLIC_KEY_NAME("pref_key_key_name"),
-        PUBLIC_KEY_ID("pref_key_public_key_id"),
-        SERVER_ADDRESS("pref_key_server");
-
-        private String key;
-
-        StorageKey(String key) {
-            this.key = key;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        @Override
-        public String toString() {
-            return this.getKey();
-        }
-    }
-
     /**
      * Constructor.
-     * @param context
      */
     public StorageHelper(Context context) {
         mContext = context;
@@ -151,5 +121,34 @@ public class StorageHelper {
 
     public String getServerAddress() {
         return this.getString(StorageKey.SERVER_ADDRESS);
+    }
+
+    public enum StorageKey {
+        PUBLIC_KEY_LEGACY("public"),
+        PUBLIC_KEY_NAME_LEGACY("public_name"),
+        SECRET_KEY_LEGACY("secret"),
+        SECRET_KEY_ID_LEGACY("secret_id"),
+        SERVER_ADDRESS_LEGACY("server"),
+
+        PRIVATE_KEY("prey_key_private_key"),
+        PUBLIC_KEY("prey_key_public_key"),
+        PUBLIC_KEY_NAME("pref_key_key_name"),
+        PUBLIC_KEY_ID("pref_key_public_key_id"),
+        SERVER_ADDRESS("pref_key_server");
+
+        private String key;
+
+        StorageKey(String key) {
+            this.key = key;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        @Override
+        public String toString() {
+            return this.getKey();
+        }
     }
 }

@@ -1,10 +1,10 @@
 package mobile.android.pass.settings;
 
+import org.spongycastle.openpgp.PGPSecretKey;
+
 import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
-
-import org.spongycastle.openpgp.PGPSecretKey;
 
 import mobile.android.pass.utils.PgpHelper;
 
@@ -73,7 +73,7 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     protected void onStartLoading() {
         Log.d(TAG, "onStartLoading");
 
-        if(isStarted()) {
+        if (isStarted()) {
             forceLoad();
         }
     }

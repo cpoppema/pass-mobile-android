@@ -59,7 +59,8 @@ public class PgpHelper {
 
     /**
      * Function to generate a KeyPair.
-     * @param name Name of the KeyPair.
+     *
+     * @param name       Name of the KeyPair.
      * @param passphrase Passphrase required to unlock the key.
      */
     public static PGPSecretKey generateKeyPair(String name, String passphrase) {
@@ -128,7 +129,6 @@ public class PgpHelper {
 
     /**
      * Function to get the (hexadecimal) key id from the given key.
-     * @return
      */
     public static String getKeyID(PGPSecretKey secretKey) {
         return Long.toHexString(secretKey.getKeyID()).toUpperCase();
@@ -136,7 +136,6 @@ public class PgpHelper {
 
     /**
      * Function to get the SecretKeyCollection from the private key.
-     * @return
      */
     private static PGPSecretKeyRingCollection extractSecretKeyCollection(byte[] privateKey) {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(privateKey);
@@ -151,6 +150,7 @@ public class PgpHelper {
 
         return null;
     }
+
     private static PGPSecretKey getSecretKey(byte[] privateKey) {
         PGPSecretKeyRingCollection keyRing = extractSecretKeyCollection(privateKey);
         Iterator<PGPSecretKeyRing> keyRingIterator = keyRing.getKeyRings();
@@ -160,9 +160,8 @@ public class PgpHelper {
 
     /**
      * Function to turn the private key into one that can be used for decrypting.
-     * @param privateKey
+     *
      * @param passphrase Passphrase that unlocks the private key.
-     * @return
      */
     public static PGPPrivateKey extractPrivateKey(byte[] privateKey, String passphrase) {
         PGPSecretKey secretKey = getSecretKey(privateKey);
@@ -171,7 +170,7 @@ public class PgpHelper {
                     .setProvider("SC")
                     .build(passphrase.toCharArray());
             return secretKey.extractPrivateKey(decrypterFactory);
-        } catch(PGPException e){
+        } catch (PGPException e) {
             e.printStackTrace();
         }
 
@@ -185,9 +184,8 @@ public class PgpHelper {
 
     /**
      * Function to decrypt a encrypted string with the given PrivateKey.
-     * @param privateKey
+     *
      * @param ciphertext Encrypted string.
-     * @return
      */
     public static String decrypt(PGPPrivateKey privateKey, String ciphertext) {
         try {

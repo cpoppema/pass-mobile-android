@@ -1,14 +1,14 @@
 package mobile.android.pass.secrets;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.provider.BaseColumns;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
-
-import org.json.JSONArray;
-import org.json.JSONException;
 
 import java.util.ArrayList;
 
@@ -39,7 +39,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
     public Cursor loadInBackground() {
         ArrayList<Secret> secrets = null;
 
-        if(mOriginalSecrets == null) {
+        if (mOriginalSecrets == null) {
             Log.d(TAG, "sleeping");
             try {
                 // Simulate network access.
@@ -51,34 +51,34 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
 //            if (mApi != null) {
 //                secrets = mApi.getSecrets();
 //            } else {
-                // Fetching some data, data has now returned
-                String json = "[\n";
-                char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-                int listSize = 26 * 10;
-                for (int i = 0; i < alphabet.length; i++) {
-                    for (int j = 0; j < listSize / alphabet.length; j++) {
-                        json += "  {\n" +
-                                "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
-                                "    \"path\": \"gmail.com\",\n" +
-                                "    \"username\": \"rcaldwell\",\n" +
-                                "    \"username_normalized\": \"rcaldwell\"\n" +
-                                "  }";
-                        if ((i * listSize / alphabet.length + j) < listSize - 1) {
-                            json += ",";
-                        }
+            // Fetching some data, data has now returned
+            String json = "[\n";
+            char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+            int listSize = 26 * 10;
+            for (int i = 0; i < alphabet.length; i++) {
+                for (int j = 0; j < listSize / alphabet.length; j++) {
+                    json += "  {\n" +
+                            "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
+                            "    \"path\": \"gmail.com\",\n" +
+                            "    \"username\": \"rcaldwell\",\n" +
+                            "    \"username_normalized\": \"rcaldwell\"\n" +
+                            "  }";
+                    if ((i * listSize / alphabet.length + j) < listSize - 1) {
+                        json += ",";
                     }
                 }
-                json += "]";
+            }
+            json += "]";
 
-                JSONArray jsonArray = null;
-                try {
-                    jsonArray = new JSONArray(json);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                if (jsonArray != null) {
-                    secrets = Secret.fromJson(jsonArray);
-                }
+            JSONArray jsonArray = null;
+            try {
+                jsonArray = new JSONArray(json);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            if (jsonArray != null) {
+                secrets = Secret.fromJson(jsonArray);
+            }
 //            }
 
         } else {

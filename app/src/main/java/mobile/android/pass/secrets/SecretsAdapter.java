@@ -16,9 +16,9 @@ import mobile.android.pass.utils.ImageViewHelper;
 
 public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
+    private final String ALPHABET = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private Context mContext;
     private AlphabetIndexer mAlphabetIndexer;
-    private final String ALPHABET = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public SecretsAdapter(Context context) {
         super(context, null, false);
@@ -30,10 +30,10 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
     public Cursor swapCursor(Cursor newCursor) {
         Cursor oldCursor = super.swapCursor(newCursor);
 
-        if(newCursor != null) {
+        if (newCursor != null) {
             mAlphabetIndexer = new AlphabetIndexer(newCursor, newCursor.getColumnIndex(Secret.DOMAIN), ALPHABET);
         }
-        if(mAlphabetIndexer != null) {
+        if (mAlphabetIndexer != null) {
             mAlphabetIndexer.setCursor(newCursor);
         }
         return oldCursor;
@@ -57,7 +57,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
     @Override
     public Object[] getSections() {
-        if(mAlphabetIndexer == null) {
+        if (mAlphabetIndexer == null) {
             return new Object[0];
         }
         return mAlphabetIndexer.getSections();
@@ -65,7 +65,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
     @Override
     public int getPositionForSection(int sectionIndex) {
-        if(mAlphabetIndexer == null) {
+        if (mAlphabetIndexer == null) {
             return 0;
         }
         return mAlphabetIndexer.getPositionForSection(sectionIndex);
@@ -73,7 +73,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
     @Override
     public int getSectionForPosition(int position) {
-        if(mAlphabetIndexer == null) {
+        if (mAlphabetIndexer == null) {
             return 0;
         }
         return mAlphabetIndexer.getSectionForPosition(position);

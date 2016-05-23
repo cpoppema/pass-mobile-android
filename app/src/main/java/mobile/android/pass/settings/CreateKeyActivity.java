@@ -1,12 +1,14 @@
 package mobile.android.pass.settings;
 
+import org.spongycastle.openpgp.PGPSecretKey;
+
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -15,8 +17,6 @@ import android.view.View.OnClickListener;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-
-import org.spongycastle.openpgp.PGPSecretKey;
 
 import mobile.android.pass.R;
 import mobile.android.pass.utils.StorageHelper;
@@ -175,8 +175,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         if (show) {
             // Dismiss keyboard.
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            View viewWithFocus= getCurrentFocus();
-            if(viewWithFocus != null) {
+            View viewWithFocus = getCurrentFocus();
+            if (viewWithFocus != null) {
                 imm.hideSoftInputFromWindow(viewWithFocus.getWindowToken(), 0);
             }
 

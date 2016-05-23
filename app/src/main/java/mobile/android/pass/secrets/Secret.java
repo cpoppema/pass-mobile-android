@@ -1,32 +1,33 @@
 package mobile.android.pass.secrets;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.database.Cursor;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
+
+/**
+ * Contains all the data to show it in the list of secrets and to uniquely identify it when
+ * retrieving the password for it.
+ */
 
 public class Secret implements Parcelable {
     public static final Parcelable.Creator<Secret> CREATOR = new Parcelable.Creator<Secret>() {
-        // This simply calls our new constructor (typically private) and
-        // passes along the unmarshalled `Parcel`, and then returns the new object!
         @Override
         public Secret createFromParcel(Parcel in) {
             return new Secret(in);
         }
 
-        // We just need to copy this and change the type to match our class.
         @Override
         public Secret[] newArray(int size) {
             return new Secret[size];
         }
     };
-
     public static final String DOMAIN = "domain";
     public static final String PATH = "path";
     public static final String USERNAME = "username";
@@ -55,7 +56,7 @@ public class Secret implements Parcelable {
         mUsernameNormalized = cursor.getString(cursor.getColumnIndex(USERNAME_NORMALIZED));
     }
 
-    private Secret(Parcel in){
+    private Secret(Parcel in) {
         String[] data = new String[3];
 
         in.readStringArray(data);
@@ -63,6 +64,20 @@ public class Secret implements Parcelable {
         mPath = data[1];
         mUsername = data[2];
         mUsernameNormalized = data[3];
+    }
+
+    // Factory method to convert an array of JSON objects into a list of objects
+    // Secret.fromJson(jsonArray);
+    public static ArrayList<Secret> fromJson(JSONArray jsonObjects) {
+        ArrayList<Secret> secrets = new ArrayList<>();
+        for (int i = 0; i < jsonObjects.length(); i++) {
+            try {
+                secrets.add(new Secret(jsonObjects.getJSONObject(i)));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return secrets;
     }
 
     public String getDomain() {
@@ -88,9 +103,10 @@ public class Secret implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeStringArray(new String[] {mDomain, mPath, mUsername, mUsernameNormalized});
+        dest.writeStringArray(new String[]{mDomain, mPath, mUsername, mUsernameNormalized});
     }
 
+    /** Returns true if @needle was found in @hay using fuzzy matching. **/
     private boolean fuzzyContains(String hay, String needle) {
         hay = hay.toLowerCase();
         needle = needle.toLowerCase();
@@ -106,24 +122,14 @@ public class Secret implements Parcelable {
         return true;
     }
 
+    /**
+     * Returns true if @needle is found in either the domain, username (normalized) using fuzzy
+     * matching.
+     **/
     public boolean isMatch(String needle) {
-        if(TextUtils.isEmpty(needle)) {
+        if (TextUtils.isEmpty(needle)) {
             return true;
         }
         return fuzzyContains(getDomain(), needle) || fuzzyContains(getUsername(), needle) || fuzzyContains(getUsernameNormalized(), needle);
-    }
-
-    // Factory method to convert an array of JSON objects into a list of objects
-    // Secret.fromJson(jsonArray);
-    public static ArrayList<Secret> fromJson(JSONArray jsonObjects) {
-        ArrayList<Secret> secrets = new ArrayList<>();
-        for (int i = 0; i < jsonObjects.length(); i++) {
-            try {
-                secrets.add(new Secret(jsonObjects.getJSONObject(i)));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-        return secrets;
     }
 }

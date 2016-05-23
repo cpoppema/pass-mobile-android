@@ -79,7 +79,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         super.onViewStateRestored(savedInstanceState);
         Log.i(TAG, "onViewStateRestored");
 
-        if (savedInstanceState != null){
+        if (savedInstanceState != null) {
             mContextMenuOpen = savedInstanceState.getBoolean("mContextMenuOpen");
         }
     }
@@ -149,7 +149,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     private void setEnabledStateForKeyID() {
         Preference keyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
         String keyId = mStorageHelper.getKeyID();
-        if(!TextUtils.isEmpty(keyId)) {
+        if (!TextUtils.isEmpty(keyId)) {
             keyIdPreference.setEnabled(true);
             keyIdPreference.setOnPreferenceClickListener(this);
         } else {
@@ -164,7 +164,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
 
         Log.i(TAG, "Preference changed: " + key);
 
-        if(TextUtils.equals(key, StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
+        if (TextUtils.equals(key, StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
             setEnabledStateForKeyID();
         }
     }
@@ -185,20 +185,20 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     }
 
     private void setSummary(Preference preference, String key) {
-        if(key == null || preference == null) {
+        if (key == null || preference == null) {
             return;
         }
 
         SharedPreferences sharedPreferences = getPreferenceManager().getSharedPreferences();
         String summary = sharedPreferences.getString(key, "");
-        if(!summary.isEmpty()) {
+        if (!summary.isEmpty()) {
             preference.setSummary(summary);
         }
     }
 
     @Override
     public boolean onPreferenceClick(Preference preference) {
-        if(preference.getKey().equals(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
+        if (preference.getKey().equals(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
             showContextMenu();
             return true;
         }

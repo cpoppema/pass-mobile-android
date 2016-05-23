@@ -4,8 +4,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 
-import mobile.android.pass.R;
-
 /**
  * Helper for using the clipboard.
  */
@@ -15,8 +13,6 @@ public class ClipboardHelper {
 
     /**
      * Function to add text to the clipboard4.
-     * @param context
-     * @param text
      */
     public static void copy(Context context, String text) {
         ClipboardManager clipboard = (ClipboardManager)
