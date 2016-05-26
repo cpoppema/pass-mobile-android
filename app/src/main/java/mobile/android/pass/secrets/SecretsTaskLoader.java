@@ -14,20 +14,27 @@ import java.util.ArrayList;
 
 import mobile.android.pass.api.Api;
 
+/** Loads a list of secrets into a @Cursor. **/
+
 public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
-
     private static final String TAG = SecretsActivity.class.toString();
-    private Cursor mCursor;
-    private String mFilter;
-    private ArrayList<Secret> mOriginalSecrets;
-    private Api mApi;
 
+    private Api mApi;
+    // Data structure to store retrieved or filtered secrets in.
+    private Cursor mCursor;
+    // Query used to filter secrets.
+    private String mFilter;
+    // List of secrets before a filter is applied.
+    private ArrayList<Secret> mOriginalSecrets;
+
+    /** Constructor used when fetching the most recent list of remote secrets. **/
     public SecretsTaskLoader(Context context, Api api) {
         super(context);
 
         mApi = api;
     }
 
+    /** Constructor used when applying (or resetting) a filter to a local set of secrets. **/
     public SecretsTaskLoader(Context context, String filter, ArrayList<Secret> secrets) {
         super(context);
 
@@ -37,12 +44,13 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
 
     @Override
     public Cursor loadInBackground() {
+        // Contains the list of remote secrets.
         ArrayList<Secret> secrets = null;
 
         if (mOriginalSecrets == null) {
             Log.d(TAG, "sleeping");
             try {
-                // Simulate network access.
+                // FIXME: remove simulating network access delay.
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
                 return null;
@@ -51,7 +59,8 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
 //            if (mApi != null) {
 //                secrets = mApi.getSecrets();
 //            } else {
-            // Fetching some data, data has now returned
+
+            // Build a list of dummy secrets in JSON.
             String json = "[\n";
             char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
             int listSize = 26 * 10;
@@ -70,6 +79,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
             }
             json += "]";
 
+            // Interpret JSON into a list.
             JSONArray jsonArray = null;
             try {
                 jsonArray = new JSONArray(json);
@@ -83,28 +93,38 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
 
         } else {
             Log.d(TAG, "NOT sleeping");
+            // Using local set of secrets.
             secrets = mOriginalSecrets;
         }
 
+        // When there is a list of secrets, create a MatrixCursor from it and apply a filter if any.
         MatrixCursor cursor = null;
         if (secrets != null) {
-            int id = 0;
-            String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
-            cursor = new MatrixCursor(columns);
             int size = secrets.size();
-            for (int i = 0; i < size; i++) {
-                Secret secret = secrets.get(i);
-                if (secret.isMatch(mFilter)) {
-                    MatrixCursor.RowBuilder builder = cursor.newRow();
-                    builder.add(BaseColumns._ID, id++);
-                    builder.add(Secret.DOMAIN, secret.getDomain());
-                    builder.add(Secret.PATH, secret.getPath());
-                    builder.add(Secret.USERNAME, secret.getUsername());
-                    builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
-                }
-            }
+            if (size > 0) {
+                String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
+                cursor = new MatrixCursor(columns);
 
-            cursor.moveToFirst();
+                // Keep track of id separately since it may skip one when filtering a secret out.
+                int id = 0;
+                for (int i = 0; i < size; i++) {
+                    Secret secret = secrets.get(i);
+
+                    // Apply filtering.
+                    if (secret.isMatch(mFilter)) {
+                        // Add to cursor.
+                        MatrixCursor.RowBuilder builder = cursor.newRow();
+                        builder.add(BaseColumns._ID, id++);
+                        builder.add(Secret.DOMAIN, secret.getDomain());
+                        builder.add(Secret.PATH, secret.getPath());
+                        builder.add(Secret.USERNAME, secret.getUsername());
+                        builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+                    }
+                }
+
+                // Loop back to start of cursor before returning it.
+                cursor.moveToFirst();
+            }
         }
 
         return cursor;
@@ -160,7 +180,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
     protected void onReset() {
         super.onReset();
 
-        // Ensure the loader is stopped
+        // Ensure the loader is stopped.
         onStopLoading();
 
         if (mCursor != null && !mCursor.isClosed()) {

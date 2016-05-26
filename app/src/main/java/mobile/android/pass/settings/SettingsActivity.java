@@ -10,21 +10,31 @@ import android.view.MenuItem;
 
 import mobile.android.pass.R;
 
+/** Activity that shows the SettingsFragment. **/
+
 public class SettingsActivity extends AppCompatActivity {
+    public static final int SETTINGS_DIALOG_TAG = 1;
+
     private static final String TAG = SettingsActivity.class.toString();
 
+    // Fragment reference.
     private SettingsFragment mSettingsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
 
-        if (savedInstanceState == null) {
-            // Display the fragment as the main content.
+        super.onCreate(savedInstanceState);
+
+        // Attempt to get a previously created SettingsFragment reference.
+        mSettingsFragment = (SettingsFragment) getFragmentManager().findFragmentByTag("" + SETTINGS_DIALOG_TAG);
+        // Non-null means it is being retained, no need to create it again.
+        if (mSettingsFragment == null) {
             mSettingsFragment = new SettingsFragment();
+
+            // Display the fragment as the main content.
             getFragmentManager().beginTransaction()
-                    .replace(android.R.id.content, mSettingsFragment)
+                    .replace(android.R.id.content, mSettingsFragment, "" + SETTINGS_DIALOG_TAG)
                     .commit();
         }
 
@@ -34,8 +44,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate from XML resource.
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_settings, menu);
+
         return true;
     }
 
@@ -46,6 +58,7 @@ public class SettingsActivity extends AppCompatActivity {
                 onBackPressed();
                 return true;
             case R.id.open_generate_key:
+                Log.i(TAG, "Start CreateKeyActivity");
                 startActivity(new Intent(this, CreateKeyActivity.class));
                 return true;
             default:
@@ -55,9 +68,11 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     public void onContextMenuClosed(Menu menu) {
-        super.onContextMenuClosed(menu);
         Log.i(TAG, "onContextMenuClosed");
 
+        super.onContextMenuClosed(menu);
+
+        // Act as a intermediary so the fragment can track the visibility state of the ContextMenu.
         if (mSettingsFragment != null) {
             mSettingsFragment.onContextMenuClosed(menu);
         }

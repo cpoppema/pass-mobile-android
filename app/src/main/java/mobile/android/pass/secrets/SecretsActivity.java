@@ -200,6 +200,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     @Override
     protected void onResume() {
         super.onResume();
+
         Log.i(TAG, "onResume");
 
         // Check if the key was unlocked more than TIMEOUT_AFTER seconds ago.
@@ -208,6 +209,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             Log.d(TAG, "Timeout expired, finish activity");
 
             mPassphrase = null;  // TODO: Find out if this is really necessary.
+            // Close activity, returning to the UnlockActivity.
             finish();
         } else {
             Log.d(TAG, "Timeout has not expired yet, keeping activity alive");
@@ -257,6 +259,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 onBackPressed();
                 return true;
             case R.id.open_settings:
+                Log.i(TAG, "Start SettingsActivity");
                 startActivity(new Intent(this, SettingsActivity.class));
                 return true;
             default:
@@ -306,6 +309,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         mCurFilter = newFilter;
         getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+
         return true;
     }
 
@@ -334,6 +338,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
         mCurFilter = newFilter;
         getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+
         return true;
     }
 
@@ -355,6 +360,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                 // FIXME: Looks like the first item is missing after search and clearing filter.
                 return new SecretsTaskLoader(this, mCurFilter, mSecrets);
         }
+
         return null;
     }
 
@@ -540,7 +546,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             @Override
             public void run() {
                 // Check for finishing state in case the timeout expired.
-                if(!isFinishing()) {
+                if (!isFinishing()) {
                     // Show menu.
                     mPopupMenu.show();
 

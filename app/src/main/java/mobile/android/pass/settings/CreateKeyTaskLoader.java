@@ -8,39 +8,50 @@ import android.util.Log;
 
 import mobile.android.pass.utils.PgpHelper;
 
-public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
+/** Creates a keypair using a key name and passphrase as input. **/
 
+public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     private static final String TAG = CreateKeyTaskLoader.class.toString();
 
+    // Input key name.
     private final String mKeyName;
-    private final String mPassword;
+    // Input passphrase.
+    private final String mPassphrase;
+
+    // The generated keypair.
     private PGPSecretKey mKeyPair;
+    // Indicator whether or not this task was stopped.
     private boolean isStopped;
 
     public CreateKeyTaskLoader(Context context, String keyName, String passphrase) {
         super(context);
 
         mKeyName = keyName;
-        mPassword = passphrase;
+        mPassphrase = passphrase;
         isStopped = false;
     }
 
     @Override
     public PGPSecretKey loadInBackground() {
         Log.d(TAG, "loadInBackground");
+
         try {
             Log.d(TAG, "sleeping");
-            // Simulate creating a strong keypair.
+            // FIXME: Remove delay before creating a keypair to test cancellation.
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             return null;
         }
 
-        mKeyPair = PgpHelper.generateKeyPair(mKeyName, mPassword);
+        // Generate keypair.
+        mKeyPair = PgpHelper.generateKeyPair(mKeyName, mPassphrase);
+
+        // When stopped, do not return a result.
         if (isStopped || isLoadInBackgroundCanceled()) {
             Log.d(TAG, "stopped");
             return null;
         }
+
         Log.d(TAG, "generated");
         return mKeyPair;
     }
@@ -48,6 +59,7 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     @Override
     public void deliverResult(PGPSecretKey keyPair) {
         Log.d(TAG, "deliverResult, result is null: " + Boolean.toString(keyPair == null));
+
         super.deliverResult(keyPair);
     }
 
@@ -81,7 +93,10 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     @Override
     protected void onStopLoading() {
         Log.d(TAG, "onStopLoading");
+
         super.onStopLoading();
+
+        // Set flag to prevent this task from delivering output.
         isStopped = true;
     }
 }

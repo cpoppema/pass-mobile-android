@@ -21,18 +21,25 @@ import mobile.android.pass.secrets.SecretsActivity;
 import mobile.android.pass.utils.PgpHelper;
 import mobile.android.pass.utils.StorageHelper;
 
+/** Shows a dialog that can unlock the local keypair when the correct passphrase is entered. **/
+
 public class UnlockFragment extends DialogFragment {
     private static final String TAG = UnlockFragment.class.toString();
 
+    // Storage reference.
     private StorageHelper mStorageHelper;
 
     public UnlockFragment() {
+        // Required empty public constructor.
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
+
+        // TODO: Is this necessary ? Should make showUnlockDialog easier since there won't ever be anything on the BackStack.
+        // Retain this fragment's state when config changes.
         setRetainInstance(true);
 
         mStorageHelper = new StorageHelper(getActivity());
@@ -123,8 +130,7 @@ public class UnlockFragment extends DialogFragment {
     @Override
     public void onDestroyView() {
         Log.i(TAG, "onDestroyView");
-        // This is here because of a bug:
-        // https://code.google.com/p/android/issues/detail?id=17423
+        // FIXME: Remove when unnecessary: https://code.google.com/p/android/issues/detail?id=17423
         if (getDialog() != null && getRetainInstance()) {
             getDialog().setDismissMessage(null);
         }

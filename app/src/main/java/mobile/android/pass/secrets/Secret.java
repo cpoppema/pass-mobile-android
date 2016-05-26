@@ -77,6 +77,7 @@ public class Secret implements Parcelable {
                 e.printStackTrace();
             }
         }
+
         return secrets;
     }
 
@@ -123,13 +124,11 @@ public class Secret implements Parcelable {
     }
 
     /**
-     * Returns true if @needle is found in either the domain, username (normalized) using fuzzy
-     * matching.
+     * Returns true if @needle is empty or when it is found in either the domain, username
+     * (normalized) using fuzzy matching.
      **/
     public boolean isMatch(String needle) {
-        if (TextUtils.isEmpty(needle)) {
-            return true;
-        }
-        return fuzzyContains(getDomain(), needle) || fuzzyContains(getUsername(), needle) || fuzzyContains(getUsernameNormalized(), needle);
+        return TextUtils.isEmpty(needle) || fuzzyContains(getDomain(), needle) ||
+                fuzzyContains(getUsername(), needle) || fuzzyContains(getUsernameNormalized(), needle);
     }
 }

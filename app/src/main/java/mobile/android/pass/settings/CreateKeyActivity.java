@@ -21,30 +21,41 @@ import android.widget.EditText;
 import mobile.android.pass.R;
 import mobile.android.pass.utils.StorageHelper;
 
-public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<PGPSecretKey> {
+/** Shows a form to get input for creating a keypair: a key name and a passphrase. **/
 
+public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<PGPSecretKey> {
     private static final String TAG = CreateKeyActivity.class.toString();
 
-    private StorageHelper mStorageHelper;
-
-    private EditText mKeyNameView;
-    private EditText mPassphraseView;
-    private ProgressDialog mProgressDialog;
+    // Form view (containing the inputs and button).
     private View mCreateKeyFormView;
+    // Key name input.
+    private EditText mKeyNameView;
+    // Passphrase input.
+    private EditText mPassphraseView;
+    // Create key button.
+    private Button mCreateKeyButton;
+    // Dialog to show while generating the keypair.
+    private ProgressDialog mProgressDialog;
+    // Storage reference.
+    private StorageHelper mStorageHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
 
+        super.onCreate(savedInstanceState);
+
+        // Load content from XML resource.
         setContentView(R.layout.activity_generate_key);
 
         // Add back button to action bar.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        // Setup the inputs and button.
+        mCreateKeyFormView = findViewById(R.id.generate_key_form);
         mKeyNameView = (EditText) findViewById(R.id.key_name);
         mPassphraseView = (EditText) findViewById(R.id.passphrase);
-        mCreateKeyFormView = findViewById(R.id.generate_key_form);
+        mCreateKeyButton = (Button) findViewById(R.id.generate_key_button);
 
         // Pre-fill key name if there is one.
         mStorageHelper = new StorageHelper(this);
@@ -54,7 +65,6 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         }
 
         // Bind button to generate a keypair.
-        Button mCreateKeyButton = (Button) findViewById(R.id.generate_key_button);
         mCreateKeyButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -66,37 +76,54 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
         Log.i(TAG, "onSaveInstanceState");
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+
         Log.i(TAG, "onRestoreInstanceState");
-        Log.i(TAG, "onRestoreInstanceState - savedInstanceState == null: " + Boolean.toString(savedInstanceState == null));
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+
         Log.i(TAG, "onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        Log.i(TAG, "onStop");
+
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            // Close it to prevent leaking it.
+            mProgressDialog.dismiss();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
         Log.i(TAG, "onResume");
     }
 
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
+
         Log.i(TAG, "onAttachedToWindow");
     }
 
     @Override
     protected void onResumeFragments() {
         super.onResumeFragments();
+
         Log.i(TAG, "onResumeFragments");
     }
 
@@ -111,6 +138,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         }
     }
 
+    /** Validates input and creates a loader when it's valid. **/
     private void createKeypair() {
         Log.i(TAG, "createKeypair");
 
@@ -152,17 +180,23 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         }
     }
 
+    /** Shows or hides the progress dialog and then hides or shows the form. **/
     private void showProgress(final boolean show) {
         if (mProgressDialog == null) {
+            // Setup the ProgressDialog for the first time.
             mProgressDialog = new ProgressDialog(this);
-            mProgressDialog.setCanceledOnTouchOutside(false);
             mProgressDialog.setIndeterminate(true);
             mProgressDialog.setMessage(getString(R.string.progress_generating_key));
-            mProgressDialog.create();
+
+            // Don't dismiss on touch outside (back button still works).
+            mProgressDialog.setCanceledOnTouchOutside(false);
+
+            // Cancel task and toggle views when dialog is dismissed.
             mProgressDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override
                 public void onDismiss(DialogInterface dialogInterface) {
                     Log.i(TAG, "progress dialog dismissed, cancel loader");
+
                     if (getSupportLoaderManager().hasRunningLoaders()) {
                         getSupportLoaderManager().getLoader(0).cancelLoad();
                     }
@@ -172,6 +206,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             });
         }
 
+        // When @show is true show the progress and hide the form otherwise vice versa.
         if (show) {
             // Dismiss keyboard.
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -199,6 +234,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     @Override
     public Loader<PGPSecretKey> onCreateLoader(int id, Bundle args) {
         Log.d(TAG, "onCreateLoader");
+
+        // Toggle views and create loader.
         showProgress(true);
         return new CreateKeyTaskLoader(this, mKeyNameView.getText().toString(), mPassphraseView.getText().toString());
     }
@@ -209,13 +246,12 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
 
         if (keyPair == null) {
             showProgress(false);
-            // TODO: Try again ? automatically ?
+            // TODO: No result but this isn't a cancellation by user. Try again ? automatically ?
         } else {
             // Save key data.
             mStorageHelper.putKeyPair(keyPair);
 
-            // Close activity and go back.
-            mProgressDialog.dismiss();
+            // Close activity, returning to the SettingsActivity.
             finish();
         }
     }
@@ -224,6 +260,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     public void onLoaderReset(Loader<PGPSecretKey> loader) {
         Log.d(TAG, "onLoaderReset");
 
+        // Close activity, returning to the SettingsActivity.
         // TODO: try again ?
         finish();
     }

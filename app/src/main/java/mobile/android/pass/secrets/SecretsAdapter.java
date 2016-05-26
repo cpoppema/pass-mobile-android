@@ -14,11 +14,17 @@ import android.widget.TextView;
 import mobile.android.pass.R;
 import mobile.android.pass.utils.ImageViewHelper;
 
+/** Creates views for showing a secret's information in a ListView. **/
+
 public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
+    // Sections for fast scroll.
     private final String ALPHABET = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private Context mContext;
+
+    // SectionIndexer using the Latin alphabet.
     private AlphabetIndexer mAlphabetIndexer;
+    // Context reference.
+    private Context mContext;
 
     public SecretsAdapter(Context context) {
         super(context, null, false);
@@ -30,29 +36,41 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
     public Cursor swapCursor(Cursor newCursor) {
         Cursor oldCursor = super.swapCursor(newCursor);
 
+        // Create an indexer for the first time, indexing on domain.
         if (newCursor != null) {
             mAlphabetIndexer = new AlphabetIndexer(newCursor, newCursor.getColumnIndex(Secret.DOMAIN), ALPHABET);
         }
+        // Update an existing indexer with the latest cursor.
         if (mAlphabetIndexer != null) {
             mAlphabetIndexer.setCursor(newCursor);
         }
+
         return oldCursor;
     }
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
+        // Inflate from XML resource.
         View view = LayoutInflater.from(mContext).inflate(R.layout.item_secret, parent, false);
+
+        // Use the ViewHolder-pattern for better use of resources.
         SecretViewHolder holder = new SecretViewHolder(view);
         view.setTag(holder);
+
         return view;
     }
 
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
         SecretViewHolder holder = (SecretViewHolder) view.getTag();
+
+        // Setup the ViewHolder.
         holder.bindData(cursor);
-        holder.getActions().setTag(cursor.getPosition());
         holder.getActions().setOnClickListener((View.OnClickListener) mContext);
+
+        // Set the position as a tag so a PopUpMenu can easily be anchored to/restored for this
+        // specific item.
+        holder.getActions().setTag(cursor.getPosition());
     }
 
     @Override
@@ -60,6 +78,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         if (mAlphabetIndexer == null) {
             return new Object[0];
         }
+
         return mAlphabetIndexer.getSections();
     }
 
@@ -68,6 +87,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         if (mAlphabetIndexer == null) {
             return 0;
         }
+
         return mAlphabetIndexer.getPositionForSection(sectionIndex);
     }
 
@@ -76,14 +96,23 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         if (mAlphabetIndexer == null) {
             return 0;
         }
+
         return mAlphabetIndexer.getSectionForPosition(position);
     }
 
+    /** Display a single secret's information, used inside a ListView **/
     public static class SecretViewHolder {
+        // Left-hand icon with the first letter of the domain.
         private ImageView mIcon;
         private TextView mIconText;
+
+        // Full length version of the domain (as long as it fits).
         private TextView mDomain;
+
+        // Full length version of the username (as long as it fits).
         private TextView mUsername;
+
+        // Icon that triggers a PopupMenu with actions (copy/show/etc.).
         private View mActions;
 
         public SecretViewHolder(View v) {
@@ -101,6 +130,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             return mActions;
         }
 
+        /** Copy text from Cursor object to all the TextViews **/
         public void bindData(Cursor cursor) {
             String domain = cursor.getString(cursor.getColumnIndex(Secret.DOMAIN));
             String username = cursor.getString(cursor.getColumnIndex(Secret.USERNAME));

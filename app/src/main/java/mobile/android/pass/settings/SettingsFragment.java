@@ -17,24 +17,33 @@ import mobile.android.pass.R;
 import mobile.android.pass.utils.ClipboardHelper;
 import mobile.android.pass.utils.StorageHelper;
 
+/** Shows a list of (im)mutable preferences and key information. **/
 
 public class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener, Preference.OnPreferenceClickListener {
-
     private static final String TAG = SettingsFragment.class.toString();
 
+    // Storage reference.
     private StorageHelper mStorageHelper;
+    // Restore/save ContextMenu from/to this state.
     private boolean mContextMenuOpen = false;
+    // Reference to the Preference with the ContextMenu.
+    private Preference mKeyIdPreference;
 
     public SettingsFragment() {
-        // Required empty public constructor
+        // Required empty public constructor.
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
+
+        super.onCreate(savedInstanceState);
+
+        // TODO: Is this necessary ? Should make SettingsActivity.onCreate easier since there won't ever be anything on the BackStack.
+        // Retain this fragment's state when config changes.
         setRetainInstance(true);
 
+        // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(getActivity());
 
         // Load the preferences from an XML resource.
@@ -51,37 +60,48 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
         Log.i(TAG, "onViewCreated");
 
-        // getView() returns null in onCreate.
+        // getView() returns null in onCreate, so do this in onViewCreated.
         registerForContextMenu(view);
-
-        if (mContextMenuOpen) {
-            view.post(new Runnable() {
-                @Override
-                public void run() {
-                    showContextMenu();
-                }
-            });
-        }
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
         Log.i(TAG, "onSaveInstanceState");
 
+        // Remember if a ContextMenu was visible.
         outState.putBoolean("mContextMenuOpen", mContextMenuOpen);
     }
 
     @Override
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
+
         Log.i(TAG, "onViewStateRestored");
 
         if (savedInstanceState != null) {
+            // Restore ContextMenu's visibility.
             mContextMenuOpen = savedInstanceState.getBoolean("mContextMenuOpen");
+            if (mContextMenuOpen) {
+                getView().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        showContextMenu();
+                    }
+                });
+            }
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        Log.i(TAG, "onResume");
     }
 
     @Override
@@ -89,7 +109,11 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         super.onDestroy();
         Log.i(TAG, "onDestroy");
 
-        // FIXME: Close open edittext's, somehow... https://code.google.com/p/android/issues/detail?id=185211
+        // FIXME: Close open EditTextPreference's Dialog
+        // NOTE: Symptoms (besides the exception): having to close multiple PreferenceDialog's that don't have an EditText any more.
+        // NOTE: setRetainInstance(false) doesn't make a difference
+        // https://code.google.com/p/android/issues/detail?id=185211
+        // https://code.google.com/p/android/issues/detail?id=186160
 
         // These listeners will stack, so unregister.
         getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
@@ -97,6 +121,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
 
     private void showContextMenu() {
         mContextMenuOpen = true;
+
         getActivity().openContextMenu(getView());
     }
 
@@ -105,6 +130,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         super.onCreateContextMenu(menu, v, menuInfo);
         Log.i(TAG, "onActivityCreated");
 
+        // Inflate from XML resource.
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.menu_key, menu);
     }
@@ -113,7 +139,6 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     public boolean onContextItemSelected(MenuItem item) {
         mContextMenuOpen = false;
 
-//        if(getUserVisibleHint()) {
         switch (item.getItemId()) {
             case R.id.action_copy_key:
                 Log.i(TAG, "Public key action: " + item.toString());
@@ -128,7 +153,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
                 ClipboardHelper.copy(getActivity(), keyID);
                 return true;
             case R.id.action_show_key:
-                // TODO: show key
+                // TODO: Show key.
                 Log.i(TAG, "Public key action: " + item.toString());
                 String keyToShow = mStorageHelper.getArmoredPublicKey();
                 Log.i(TAG, "Public key: " + keyToShow);
@@ -136,8 +161,6 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
             default:
                 return super.onContextItemSelected(item);
         }
-//        }
-//        return false;
     }
 
     public void onContextMenuClosed(Menu menu) {
@@ -145,16 +168,20 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         mContextMenuOpen = false;
     }
 
-    // Enable interaction for PREF_KEY_PUBLIC_KEY_ID if there is a key.
+    /** Enables/disables interaction for @mKeyIdPreference if a local key exists. **/
     private void setEnabledStateForKeyID() {
-        Preference keyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
-        String keyId = mStorageHelper.getKeyID();
-        if (!TextUtils.isEmpty(keyId)) {
-            keyIdPreference.setEnabled(true);
-            keyIdPreference.setOnPreferenceClickListener(this);
+        if (mKeyIdPreference == null) {
+            mKeyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
+        }
+
+        if (TextUtils.isEmpty(mStorageHelper.getKeyID())) {
+            // Disable interaction.
+            mKeyIdPreference.setEnabled(false);
+            mKeyIdPreference.setOnPreferenceClickListener(null);
         } else {
-            keyIdPreference.setEnabled(false);
-            keyIdPreference.setOnPreferenceClickListener(null);
+            // Enable interaction.
+            mKeyIdPreference.setEnabled(true);
+            mKeyIdPreference.setOnPreferenceClickListener(this);
         }
     }
 
@@ -169,6 +196,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         }
     }
 
+    /** Loops through all preferences in the PreferenceScreen and set its initial summary. **/
     private void initSummaries() {
         for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); ++i) {
             Preference preference = getPreferenceScreen().getPreference(i);
@@ -184,6 +212,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         }
     }
 
+    /** Sets summary for a single Preference. **/
     private void setSummary(Preference preference, String key) {
         if (key == null || preference == null) {
             return;

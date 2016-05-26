@@ -20,22 +20,35 @@ import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
 import mobile.android.pass.utils.StorageHelper;
 
+/** Shows the initial dialog: an informational popup or an unlock dialog. **/
+
 public class UnlockActivity extends AppCompatActivity {
+    // Indicates there is no popup visible.
     public static final int NO_DIALOG_TAG = -1;
+    // Indicates the informational popup (goto settings) is visible.
     public static final int SETTINGS_DIALOG_TAG = 0;
+    // Indicates the unlock dialog is visible.
     public static final int UNLOCK_DIALOG_TAG = 1;
+
     private static final String TAG = UnlockActivity.class.toString();
+
+    // Dialog reference.
     private AlertDialog mDialog;
+    // Restore/save the right dialog state based on this tag.
     private int mDialogTag = NO_DIALOG_TAG;
+    // Storage reference.
     private StorageHelper mStorageHelper;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
 
+        super.onCreate(savedInstanceState);
+
+        // Load content from XML resource.
         setContentView(R.layout.activity_unlock);
 
+        // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(this);
 
         if (savedInstanceState == null) {
@@ -74,9 +87,11 @@ public class UnlockActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
         Log.i(TAG, "onSaveInstanceState");
 
+        // Remember open dialog state.
         outState.putInt("mDialogTag", mDialogTag);
 
         if (mDialog != null) {
+            // Close it to prevent leaking it.
             mDialog.dismiss();
         }
     }
@@ -87,6 +102,7 @@ public class UnlockActivity extends AppCompatActivity {
         Log.i(TAG, "onRestoreInstanceState");
 
         if (savedInstanceState != null) {
+            // Restore open dialog state.
             mDialogTag = savedInstanceState.getInt("mDialogTag");
         }
     }
@@ -118,8 +134,11 @@ public class UnlockActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         Log.i(TAG, "onCreateOptionsMenu");
+
+        // Inflate from XML resource.
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_unlock, menu);
+
         return true;
     }
 
@@ -135,11 +154,12 @@ public class UnlockActivity extends AppCompatActivity {
         }
     }
 
+    /** Sets the current open dialog state. **/
     public void setDialogTag(int dialogTag) {
         mDialogTag = dialogTag;
     }
 
-    // Show either unlock or settings dialog.
+    /** Show either unlock or settings dialog. **/
     private void showDialog() {
         if (mDialogTag == NO_DIALOG_TAG) {
             boolean hasKeypair = !TextUtils.isEmpty(mStorageHelper.getKeyID());
@@ -151,7 +171,7 @@ public class UnlockActivity extends AppCompatActivity {
         }
     }
 
-    // Render a new blank unlock dialog, discarding any that already exists.
+    /** Render a new blank unlock dialog, discarding any that already exists. **/
     private void showUnlockDialog() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         Fragment prev = getSupportFragmentManager().findFragmentByTag("" + UNLOCK_DIALOG_TAG);
@@ -165,9 +185,9 @@ public class UnlockActivity extends AppCompatActivity {
         fragment.show(ft, "" + UNLOCK_DIALOG_TAG);
     }
 
+    /** Render a dialog that tells the user to navigate to the settings. **/
     private void showSettingsDialog() {
         mDialog = new AlertDialog.Builder(UnlockActivity.this)
-                .setTitle(R.string.dialog_settings_title)
                 .setMessage(R.string.dialog_settings_message)
                 .setPositiveButton(R.string.dialog_settings_button, new DialogInterface.OnClickListener() {
                     @Override
@@ -176,6 +196,7 @@ public class UnlockActivity extends AppCompatActivity {
                         startActivity(new Intent(UnlockActivity.this, SettingsActivity.class));
                     }
                 })
+                .setTitle(R.string.dialog_settings_title)
                 .create();
 
         mDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
