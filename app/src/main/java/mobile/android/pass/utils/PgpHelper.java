@@ -1,5 +1,7 @@
 package mobile.android.pass.utils;
 
+import android.util.Log;
+
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
@@ -222,7 +224,6 @@ public class PgpHelper {
                 publicKeyEncryptedData = (PGPPublicKeyEncryptedData) encryptedDataIterator.next();
                 // Get the ID of the key that needs to be used for decrypting the data.
                 long keyId = publicKeyEncryptedData.getKeyID();
-
                 if (privateKey.getKeyID() == keyId) {
                     hasPrivateKeyMatch = true;
                     break;
@@ -259,7 +260,6 @@ public class PgpHelper {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return null;
     }
 }

@@ -1,5 +1,8 @@
 package mobile.android.pass.secrets;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.spongycastle.openpgp.PGPPrivateKey;
 
 import android.content.Intent;
@@ -20,6 +23,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -27,15 +31,22 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import mobile.android.pass.R;
-import mobile.android.pass.api.Api;
+import mobile.android.pass.api.SecretApi;
+import mobile.android.pass.api.SecretCallback;
+import mobile.android.pass.api.SecretsApi;
+import mobile.android.pass.api.SecretsCallback;
 import mobile.android.pass.settings.SettingsActivity;
+import mobile.android.pass.unlock.UnlockActivity;
 import mobile.android.pass.utils.ClipboardHelper;
 import mobile.android.pass.utils.PgpHelper;
 import mobile.android.pass.utils.StorageHelper;
 
 /** Shows a list of secrets to search in and copy data for (e.g. username, password). **/
 
-public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener, LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener {
+public class SecretsActivity extends AppCompatActivity implements
+        SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener,
+        LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener, SecretsCallback,
+        SecretCallback,  PopupMenu.OnMenuItemClickListener {
     private static final String TAG = SecretsActivity.class.toString();
 
     // Loader ID for fetching secrets.
@@ -47,7 +58,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     // When returning to this activity, it will be closed when this timeout in seconds has expired.
     private final int TIMEOUT_AFTER = 30;
 
-    private Api mApi;
+    private SecretsApi mSecretsApi;
+    private SecretApi mSecretApi;
     // Active query text for mSearchView.
     private String mCurFilter;
     // Layout reference.
@@ -74,6 +86,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     private SwipeRefreshLayout mSwipeRefreshLayout;
     // Time in seconds since the key was unlocked.
     private int mTimeActivated = -1;
+    private int mCurrentSecretPopupPosition;
+    private int mSecretAction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,18 +101,20 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Add back button to action bar.
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        // Instantiate custom storage interface.
+        mStorageHelper = new StorageHelper(this);
+        mSecretsApi = new SecretsApi(this, this);
+
         if (!TextUtils.isEmpty(getIntent().getStringExtra("mPassphrase"))) {
             // Get passphrase from previous activity.
             mPassphrase = getIntent().getStringExtra("mPassphrase");
             getIntent().removeExtra("mPassphrase");
 
+            mPrivateKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
+
             // Keep track of time since unlock.
             mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
         }
-        Log.d(TAG, "mPassphrase: " + mPassphrase);
-
-        // Instantiate custom storage interface.
-        mStorageHelper = new StorageHelper(this);
 
         // Setup the ListView.
         mListView = (ListView) findViewById(R.id.list_view_secrets);
@@ -111,8 +127,13 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
 
+        mSecretApi = new SecretApi(this, this);
+
         // Load secrets.
         if (mSecrets == null) {
+
+            mSwipeRefreshLayout.setRefreshing(true);
+
             // Initial load.
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
@@ -120,7 +141,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
                     // Animated busy indicator.
                     mSwipeRefreshLayout.setRefreshing(true);
                     // Prepare the loader.
-                    getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
+
+                    mSecretsApi.getSecrets();
                 }
             });
         } else {
@@ -159,6 +181,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Remember passphrase to be able to unlock the secret key on resume.
         outState.putString("mPassphrase", mPassphrase);
 
+        mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
         // Keep track of the original time since unlock.
         outState.putInt("mTimeActivated", mTimeActivated);
     }
@@ -210,6 +233,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
 
             mPassphrase = null;  // TODO: Find out if this is really necessary.
             // Close activity, returning to the UnlockActivity.
+            startActivity(new Intent(this, UnlockActivity.class));
             finish();
         } else {
             Log.d(TAG, "Timeout has not expired yet, keeping activity alive");
@@ -281,7 +305,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
             mSearchView.setIconified(true);
         }
 
-        getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
+        mSwipeRefreshLayout.setRefreshing(true);
+        mSecretsApi.getSecrets();
     }
 
     /**
@@ -354,7 +379,7 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         switch (id) {
             case LOADER_ID_REFRESH:
                 // Fetch new set of secrets.
-                return new SecretsTaskLoader(this, mApi);
+                return new SecretsTaskLoader(this, mSecretsApi);
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
                 // FIXME: Looks like the first item is missing after search and clearing filter.
@@ -466,68 +491,8 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
         // Inflate from XML resource.
         mPopupMenu = new PopupMenu(anchorView.getContext(), anchorView);
         mPopupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, mPopupMenu.getMenu());
-
-        mPopupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(popupMenuViewPosition));
-
-                switch (item.getItemId()) {
-                    case R.id.action_copy_secret_password:
-                        Log.i(TAG, "Clicked on " + item.getTitle() + "");
-
-                        // TODO: Retrieve password from api.
-                        String password = null;
-//                        String password = mApi.getSecret(secret);
-                        if (password != null) {
-                            ClipboardHelper.copy(getApplicationContext(), password);
-                            Toast.makeText(getApplicationContext(),
-                                    getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
-                                    .show();
-                        } else {
-                            Toast.makeText(getApplicationContext(),
-                                    getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
-                                    .show();
-                        }
-                        break;
-//                    case R.id.action_show_secret_password:
-//                        Log.i(TAG, "Clicked on " + item.getTitle() + "");
-//
-//                        // TODO: Retrieve password from api.
-//                        String password = null;
-////                        String password = mApi.getSecret(secret);
-//                        if (password != null) {
-//                            // TODO: Show password.
-//
-//                            Toast.makeText(getApplicationContext(),
-//                                    getString(R.string.toast_show_secret_password), Toast.LENGTH_SHORT)
-//                                    .show();
-//                        } else {
-//                            Toast.makeText(getApplicationContext(),
-//                                    getString(R.string.toast_show_secret_password_error), Toast.LENGTH_SHORT)
-//                                    .show();
-//                        }
-//                        break;
-                    case R.id.action_copy_secret_username:
-                        Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getUsername());
-
-                        ClipboardHelper.copy(getApplicationContext(), secret.getUsername());
-                        Toast.makeText(getApplicationContext(),
-                                getString(R.string.toast_copy_secret_username), Toast.LENGTH_SHORT)
-                                .show();
-                        break;
-                    case R.id.action_copy_secret_website:
-                        Log.i(TAG, "Clicked on " + item.getTitle() + ": " + secret.getDomain());
-
-                        ClipboardHelper.copy(getApplicationContext(), secret.getDomain());
-                        Toast.makeText(getApplicationContext(),
-                                getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
-                                .show();
-                        break;
-                }
-                return true;
-            }
-        });
+        mPopupMenu.setOnMenuItemClickListener(this);
+        mCurrentSecretPopupPosition = popupMenuViewPosition;
 
         // Remember when this popup is closed.
         mPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
@@ -568,5 +533,77 @@ public class SecretsActivity extends AppCompatActivity implements SwipeRefreshLa
     public void onClick(View view) {
         mPopupMenuViewPosition = (int) view.getTag();
         showPopup(mPopupMenuViewPosition);
+    }
+
+    @Override
+    public void onSecretApiResponse(String pgpResponse) {
+        String password = PgpHelper.decrypt(mPrivateKey, pgpResponse);
+        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPopupPosition));
+
+        switch (mSecretAction) {
+            case R.id.action_copy_secret_password:
+                if (password != null) {
+                    ClipboardHelper.copy(getApplicationContext(), password);
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
+                            .show();
+                }
+                break;
+            case R.id.action_copy_secret_username:
+                ClipboardHelper.copy(getApplicationContext(), secret.getUsername());
+                Toast.makeText(getApplicationContext(),
+                        getString(R.string.toast_copy_secret_username), Toast.LENGTH_SHORT)
+                        .show();
+                break;
+            case R.id.action_copy_secret_website:
+                ClipboardHelper.copy(getApplicationContext(), secret.getDomain());
+                Toast.makeText(getApplicationContext(),
+                        getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
+                        .show();
+                break;
+            case R.id.action_show_password:
+                if (password != null) {
+                    new SecretDialogHelper(this).showSecretDialog(secret, password);
+                } else {
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
+                            .show();
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void onSecretApiFailure() {
+
+    }
+
+    @Override
+    public void onSecretsApiResponse(String pgpResponse) {
+        try {
+            JSONArray secretsJsonArray = new JSONArray(PgpHelper.decrypt(mPrivateKey, pgpResponse));
+            mSecrets = Secret.fromJson(secretsJsonArray);
+            getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onSecretsApiFailure() {
+
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+        mSecretAction = item.getItemId();
+        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPopupPosition));
+        mSecretApi.getSecret(secret.getPath(), secret.getUsername());
+        // Show spinner??
+        return true;
     }
 }
