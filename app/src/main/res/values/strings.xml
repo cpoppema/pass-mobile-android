@@ -66,4 +66,12 @@
 
     <string name="dialog_button_copy">COPY</string>
     <string name="dialog_button_ok">OK</string>
+
+    <string name="volley_timeout_error_message">Oops... Server timed out</string>
+    <string name="volley_no_connection_error_message">Oops... No network connection</string>
+    <string name="volley_auth_failure_error_message">Oops... Public key denied</string>
+    <string name="volley_server_error_message">Oops... Server down</string>
+    <string name="volley_network_error_message">Oops... Network problem</string>
+    <string name="volley_parse_error_message">Oops... Invalid server response</string>
+    <string name="volley_generic_error_message">Oops... something went wrong</string>
 </resources>

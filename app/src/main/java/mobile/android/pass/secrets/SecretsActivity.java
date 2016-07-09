@@ -87,7 +87,10 @@ public class SecretsActivity extends AppCompatActivity implements
     // Time in seconds since the key was unlocked.
     private int mTimeActivated = -1;
     // TODO: DOCUMENT
+    private SecretDialogHelper mSecretDialogHelper;
     private int mCurrentSecretPosition = -1;
+    private int mCurrentSecretDialog = -1;
+    private String mCurrentSecretPassword = null;
     // TODO: DOCUMENT
     private int mSecretAction = -1;
 
@@ -105,6 +108,7 @@ public class SecretsActivity extends AppCompatActivity implements
 
         // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(this);
+        mSecretDialogHelper = new SecretDialogHelper(this);
 
         initApis();
 
@@ -195,6 +199,18 @@ public class SecretsActivity extends AppCompatActivity implements
         // Remember passphrase to be able to unlock the secret key on resume.
         outState.putString("mPassphrase", mPassphrase);
 
+        if (mSecretDialogHelper.isShowing()) {
+            if (mCurrentSecretPosition >= 0) {
+                mCurrentSecretDialog = mCurrentSecretPosition;
+            }
+        } else {
+            mCurrentSecretDialog = -1;
+            mCurrentSecretPassword = null;
+        }
+
+        outState.putInt("mCurrentSecretDialog", mCurrentSecretDialog);
+        outState.putString("mCurrentSecretPassword", mCurrentSecretPassword);
+
         // Reset timeout to avoid being locked out after a screen rotate.
         mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
         // Keep track of the original time since unlock.
@@ -214,6 +230,9 @@ public class SecretsActivity extends AppCompatActivity implements
         mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
         mPassphrase = savedInstanceState.getString("mPassphrase");
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
+
+        mCurrentSecretDialog = savedInstanceState.getInt("mCurrentSecretDialog");
+        mCurrentSecretPassword = savedInstanceState.getString("mCurrentSecretPassword");
     }
 
     @Override
@@ -229,6 +248,8 @@ public class SecretsActivity extends AppCompatActivity implements
 
         Log.i(TAG, "onStop");
 
+        mSecretDialogHelper.closeSecretDialog();
+
         // FIXME: Stop ongoing http requests when activity stops.
 //        if (mApi != null) {
 //            mApi.cancelAll();
@@ -240,6 +261,11 @@ public class SecretsActivity extends AppCompatActivity implements
         super.onResume();
 
         Log.i(TAG, "onResume");
+
+        if (mCurrentSecretDialog >= 0 && mCurrentSecretPassword != null) {
+            Secret secret = mSecrets.get(mCurrentSecretDialog);
+            mSecretDialogHelper.showSecretDialog(secret, mCurrentSecretPassword);
+        }
 
         // Check if the key was unlocked more than TIMEOUT_AFTER seconds ago.
         boolean expired = testTimeoutIsExpired();
@@ -258,7 +284,7 @@ public class SecretsActivity extends AppCompatActivity implements
             mPrivateKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
             Log.d(TAG, "Unlocked key: " + Long.toHexString(mPrivateKey.getKeyID()));
         }
-        
+
     }
 
     @Override
@@ -560,53 +586,16 @@ public class SecretsActivity extends AppCompatActivity implements
         if (plaintext != null) {
             password = plaintext.split("\n")[0];
         }
-        switch (mSecretAction) {
-            case R.id.action_copy_secret_password:
-                if (password != null) {
-                    ClipboardHelper.copy(getApplicationContext(), password);
-                    Toast.makeText(getApplicationContext(),
-                            getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
-                            .show();
-                } else {
-                    Toast.makeText(getApplicationContext(),
-                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
-                            .show();
-                }
-                break;
-            case R.id.action_copy_secret_username:
-                ClipboardHelper.copy(getApplicationContext(), secret.getUsername());
-                Toast.makeText(getApplicationContext(),
-                        getString(R.string.toast_copy_secret_username), Toast.LENGTH_SHORT)
-                        .show();
-                break;
-            case R.id.action_copy_secret_website:
-                ClipboardHelper.copy(getApplicationContext(), secret.getDomain());
-                Toast.makeText(getApplicationContext(),
-                        getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
-                        .show();
-                break;
-            case R.id.action_show_secret:
-                if (password != null) {
-                    // Show a Dialog with credentials.
-                    new SecretDialogHelper(this).showSecretDialog(secret, password);
-                } else {
-                    // TODO: different error string
-                    Toast.makeText(getApplicationContext(),
-                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
-                            .show();
-                }
-                break;
-        }
+        handlePasswordActions(secret, password);
 
         // Reset action.
         mSecretAction = -1;
     }
 
     @Override
-    public void onSecretApiFailure(VolleyError error) {
-        // TODO Proper feedback on specific errors.
+    public void onSecretApiFailure(String errorMessage) {
         Toast.makeText(getApplicationContext(),
-                "Oops! Could not get secret...", Toast.LENGTH_LONG)
+                errorMessage, Toast.LENGTH_LONG)
                 .show();
     }
 
@@ -622,10 +611,9 @@ public class SecretsActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onSecretsApiFailure(VolleyError error) {
-        // TODO Proper feedback on specific errors.
+    public void onSecretsApiFailure(String errorMessage) {
         Toast.makeText(getApplicationContext(),
-                "Oops! Could not get secrets...", Toast.LENGTH_LONG)
+                errorMessage, Toast.LENGTH_LONG)
                 .show();
     }
 
@@ -633,8 +621,64 @@ public class SecretsActivity extends AppCompatActivity implements
     public boolean onMenuItemClick(MenuItem item) {
         mSecretAction = item.getItemId();
         Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
-        mSecretApi.getSecret(secret.getPath(), secret.getUsername());
-        // Show spinner??
+        switch (mSecretAction) {
+            case R.id.action_copy_secret_password:
+                mSecretApi.getSecret(secret.getPath(), secret.getUsername());
+                break;
+            case R.id.action_show_secret:
+                mSecretApi.getSecret(secret.getPath(), secret.getUsername());
+                break;
+            default:
+                handleNonPasswordActions(secret);
+        }
+
         return true;
+    }
+
+    private void handlePasswordActions(Secret secret, String password) {
+        switch (mSecretAction) {
+            case R.id.action_copy_secret_password:
+                if (password != null) {
+                    ClipboardHelper.copy(getApplicationContext(), password);
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
+                            .show();
+                }
+                break;
+            case R.id.action_show_secret:
+                if (password != null) {
+                    // Show a Dialog with credentials.
+                    mCurrentSecretPassword = password;
+                    mSecretDialogHelper.showSecretDialog(secret, password);
+                } else {
+                    // TODO: different error string
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
+                            .show();
+                }
+                break;
+        }
+    }
+
+    private void handleNonPasswordActions(Secret secret) {
+        switch (mSecretAction) {
+            case R.id.action_copy_secret_username:
+                ClipboardHelper.copy(getApplicationContext(), secret.getUsername());
+                Toast.makeText(getApplicationContext(),
+                        getString(R.string.toast_copy_secret_username), Toast.LENGTH_SHORT)
+                        .show();
+                break;
+            case R.id.action_copy_secret_website:
+                ClipboardHelper.copy(getApplicationContext(), secret.getDomain());
+                Toast.makeText(getApplicationContext(),
+                        getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
+                        .show();
+                break;
+        }
+
     }
 }

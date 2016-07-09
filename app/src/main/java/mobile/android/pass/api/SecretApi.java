@@ -46,7 +46,7 @@ public class SecretApi extends Api implements Response.Listener<JSONObject>, Res
 
     @Override
     public void onErrorResponse(VolleyError error) {
-        mCallback.onSecretApiFailure(error);
+        mCallback.onSecretApiFailure(getVolleyErrorFeedbackText(error));
     }
 
     @Override

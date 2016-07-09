@@ -31,6 +31,7 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
                 new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                mPassword = null;
                 dialog.cancel();
             }
         });
@@ -38,11 +39,19 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
         mAlertDialog = builder.show();
     }
 
+    public boolean isShowing() {
+        if (mAlertDialog != null) {
+            return mAlertDialog.isShowing();
+        }
+        return false;
+    }
+
     /**
      * Function to close an already active secret dialog.
      */
     public void closeSecretDialog() {
         if (mAlertDialog != null) {
+            mPassword = null;
             mAlertDialog.cancel();
         }
     }
