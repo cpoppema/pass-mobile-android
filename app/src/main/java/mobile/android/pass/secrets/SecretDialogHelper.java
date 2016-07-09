@@ -7,20 +7,25 @@ import android.support.v7.app.AlertDialog;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import mobile.android.pass.R;
 import mobile.android.pass.utils.ClipboardHelper;
 
 public class SecretDialogHelper implements DialogInterface.OnClickListener {
     private Context mContext;
     private AlertDialog mAlertDialog;
 
+    private String mPassword;
+
     public SecretDialogHelper(Context context) {
         mContext = context;
     }
 
     public void showSecretDialog(Secret secret, String password) {
+        mPassword = password;
+
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(secret.getDomain());
-        builder.setMessage(password);
+        builder.setMessage(secret.getUsername() + "\n" + mPassword);
 
         builder.setPositiveButton("COPY", this);
         builder.setNegativeButton("OK", new DialogInterface.OnClickListener() {
@@ -44,8 +49,10 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
 
     @Override
     public void onClick(DialogInterface dialog, int which) {
-        ClipboardHelper.copy(mContext,
-                ((TextView) mAlertDialog.findViewById(android.R.id.message)).getText().toString());
-        Toast.makeText(mContext, "Password copied to clipboard", Toast.LENGTH_SHORT).show();
+        Context appContext = mContext.getApplicationContext();
+        ClipboardHelper.copy(appContext, mPassword);
+        Toast.makeText(appContext,
+                appContext.getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
+                .show();
     }
 }

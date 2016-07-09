@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AlphabetIndexer;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.SectionIndexer;
 import android.widget.TextView;
 
@@ -67,10 +68,14 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         // Setup the ViewHolder.
         holder.bindData(cursor);
         holder.getActions().setOnClickListener((View.OnClickListener) mContext);
+        holder.getItem().setOnClickListener((View.OnClickListener) mContext);
 
         // Set the position as a tag so a PopUpMenu can easily be anchored to/restored for this
         // specific item.
         holder.getActions().setTag(cursor.getPosition());
+        // Set the position as a tag so a SecretDialogHelper can easily be displayed/restored for
+        // this specific item.
+        holder.getItem().setTag(cursor.getPosition());
     }
 
     @Override
@@ -102,6 +107,9 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
     /** Display a single secret's information, used inside a ListView **/
     public static class SecretViewHolder {
+        // Background view.
+        private RelativeLayout mItem;
+
         // Left-hand icon with the first letter of the domain.
         private ImageView mIcon;
         private TextView mIconText;
@@ -116,6 +124,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         private View mActions;
 
         public SecretViewHolder(View v) {
+            mItem = (RelativeLayout) v.findViewById(R.id.item_secret);
             mIcon = (ImageView) v.findViewById(R.id.item_secret_icon);
             mIconText = (TextView) v.findViewById(R.id.item_secret_icon_text);
             mDomain = (TextView) v.findViewById(R.id.item_secret_domain);
@@ -128,6 +137,10 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
         public View getActions() {
             return mActions;
+        }
+
+        public View getItem() {
+            return mItem;
         }
 
         /** Copy text from Cursor object to all the TextViews **/

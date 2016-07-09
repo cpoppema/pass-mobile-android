@@ -2,7 +2,6 @@ package mobile.android.pass.secrets;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.spongycastle.openpgp.PGPPrivateKey;
 
 import android.content.Intent;
@@ -23,7 +22,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -86,8 +84,10 @@ public class SecretsActivity extends AppCompatActivity implements
     private SwipeRefreshLayout mSwipeRefreshLayout;
     // Time in seconds since the key was unlocked.
     private int mTimeActivated = -1;
-    private int mCurrentSecretPopupPosition;
-    private int mSecretAction;
+    // TODO: DOCUMENT
+    private int mCurrentSecretPosition = -1;
+    // TODO: DOCUMENT
+    private int mSecretAction = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -460,6 +460,7 @@ public class SecretsActivity extends AppCompatActivity implements
     /** Shows the PopupMenu for the view at position @popupMenuViewPosition in the ListView. **/
     private void showPopup(final int popupMenuViewPosition) {
         Log.d(TAG, "showPopup: " + popupMenuViewPosition);
+        mPopupMenuViewPosition = popupMenuViewPosition;
 
         if (mListView == null) {
             return;
@@ -492,7 +493,6 @@ public class SecretsActivity extends AppCompatActivity implements
         mPopupMenu = new PopupMenu(anchorView.getContext(), anchorView);
         mPopupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, mPopupMenu.getMenu());
         mPopupMenu.setOnMenuItemClickListener(this);
-        mCurrentSecretPopupPosition = popupMenuViewPosition;
 
         // Remember when this popup is closed.
         mPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
@@ -528,17 +528,32 @@ public class SecretsActivity extends AppCompatActivity implements
         });
     }
 
-    /** Shows a PopupMenu with possible actions for the secret clicked on. **/
+    /** Do something when clicking on different parts of a single list item. **/
     @Override
     public void onClick(View view) {
-        mPopupMenuViewPosition = (int) view.getTag();
-        showPopup(mPopupMenuViewPosition);
+        mCurrentSecretPosition = (int) view.getTag();
+
+        switch(view.getId()) {
+            case R.id.item_secret:
+                // Show a Dialog with credentials.
+                mSecretAction = R.id.action_show_secret;
+                Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
+                mSecretApi.getSecret(secret.getPath(), secret.getUsername());
+                break;
+            case R.id.item_secret_actions:
+                // Show a PopupMenu with possible actions for the secret clicked on.
+                showPopup(mCurrentSecretPosition);
+                break;
+        }
     }
 
     @Override
     public void onSecretApiResponse(String pgpResponse) {
-        String password = PgpHelper.decrypt(mPrivateKey, pgpResponse);
-        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPopupPosition));
+        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
+
+        // Read the first line as the password.
+        String plaintext = PgpHelper.decrypt(mPrivateKey, pgpResponse);
+        String password = plaintext.split("\n")[0];
 
         switch (mSecretAction) {
             case R.id.action_copy_secret_password:
@@ -565,21 +580,26 @@ public class SecretsActivity extends AppCompatActivity implements
                         getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
                         .show();
                 break;
-            case R.id.action_show_password:
+            case R.id.action_show_secret:
                 if (password != null) {
+                    // Show a Dialog with credentials.
                     new SecretDialogHelper(this).showSecretDialog(secret, password);
                 } else {
+                    // TODO: different error string
                     Toast.makeText(getApplicationContext(),
                             getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
                             .show();
                 }
                 break;
         }
+
+        // Reset action.
+        mSecretAction = -1;
     }
 
     @Override
     public void onSecretApiFailure() {
-
+        Log.d(TAG, "onSecretApiFailure");
     }
 
     @Override
@@ -595,13 +615,13 @@ public class SecretsActivity extends AppCompatActivity implements
 
     @Override
     public void onSecretsApiFailure() {
-
+        Log.d(TAG, "onSecretsApiFailure");
     }
 
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         mSecretAction = item.getItemId();
-        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPopupPosition));
+        Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
         mSecretApi.getSecret(secret.getPath(), secret.getUsername());
         // Show spinner??
         return true;
