@@ -1,5 +1,6 @@
 package mobile.android.pass.settings;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
@@ -19,7 +20,9 @@ import mobile.android.pass.utils.StorageHelper;
 
 /** Shows a list of (im)mutable preferences and key information. **/
 
-public class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener, Preference.OnPreferenceClickListener {
+public class SettingsFragment extends PreferenceFragment
+        implements SharedPreferences.OnSharedPreferenceChangeListener,
+        Preference.OnPreferenceClickListener {
     private static final String TAG = SettingsFragment.class.toString();
 
     // Storage reference.
@@ -153,10 +156,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
                 ClipboardHelper.copy(getActivity(), keyID);
                 return true;
             case R.id.action_show_key:
-                // TODO: Show key.
-                Log.i(TAG, "Public key action: " + item.toString());
-                String keyToShow = mStorageHelper.getArmoredPublicKey();
-                Log.i(TAG, "Public key: " + keyToShow);
+                startActivity(new Intent(getActivity(), PublicKeyActivity.class));
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -184,6 +184,8 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
             mKeyIdPreference.setOnPreferenceClickListener(this);
         }
     }
+
+
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {

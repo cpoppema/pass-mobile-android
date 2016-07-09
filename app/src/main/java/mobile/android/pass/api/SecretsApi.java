@@ -11,7 +11,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Created by marco on 7/8/16.
+ * Api class for getting a list of secrets.
  */
 public class SecretsApi extends Api implements Response.Listener<JSONObject>, Response.ErrorListener {
     private SecretsCallback mCallback;
@@ -35,13 +35,13 @@ public class SecretsApi extends Api implements Response.Listener<JSONObject>, Re
 
     @Override
     public void onErrorResponse(VolleyError error) {
-        mCallback.onSecretsApiFailure();
+        mCallback.onSecretsApiFailure(error);
     }
 
     @Override
     public void onResponse(JSONObject response) {
         try {
-            String pgpMessage = response.getString("response");
+            String pgpMessage = response.getString(mResponseKey);
             mCallback.onSecretsApiResponse(pgpMessage);
         } catch (JSONException e) {
             e.printStackTrace();

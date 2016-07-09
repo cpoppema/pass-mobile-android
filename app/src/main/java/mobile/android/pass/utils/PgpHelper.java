@@ -1,7 +1,5 @@
 package mobile.android.pass.utils;
 
-import android.util.Log;
-
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
@@ -53,6 +51,9 @@ public class PgpHelper {
     private static final String TAG = PgpHelper.class.toString();
 
     private static final int KEY_PAIR_BITS = 2048;
+    private static final String CHARSET = "UTF-8";
+    private static final String SECURITY_PROVIDER = "SC";
+    private static final String ALGORITHM = "RSA";
 
     // Make sure BouncyCastle is set as security provider.
     static {
@@ -67,7 +68,7 @@ public class PgpHelper {
      */
     public static PGPSecretKey generateKeyPair(String name, String passphrase) {
         try {
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "SC");
+            KeyPairGenerator generator = KeyPairGenerator.getInstance(ALGORITHM, SECURITY_PROVIDER);
             generator.initialize(KEY_PAIR_BITS);
             KeyPair pair = generator.generateKeyPair();
 
@@ -86,7 +87,7 @@ public class PgpHelper {
                             HashAlgorithmTags.SHA1),
                     new JcePBESecretKeyEncryptorBuilder(
                             PGPEncryptedData.CAST5, sha1Calc)
-                            .setProvider("SC")
+                            .setProvider(SECURITY_PROVIDER)
                             .build(passphrase.toCharArray()));
 
             return secretKey;
@@ -107,7 +108,7 @@ public class PgpHelper {
             ArmoredOutputStream pubArmorStream = new ArmoredOutputStream(pubStream);
             secretKey.getPublicKey().encode(pubArmorStream);
             pubArmorStream.close();
-            return new String(pubStream.toByteArray(), Charset.forName("UTF-8"));
+            return new String(pubStream.toByteArray(), Charset.forName(CHARSET));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -121,7 +122,7 @@ public class PgpHelper {
             ArmoredOutputStream secretArmorStream = new ArmoredOutputStream(secretStream);
             secretKey.encode(secretArmorStream);
             secretArmorStream.close();
-            return new String(secretStream.toByteArray(), Charset.forName("UTF-8"));
+            return new String(secretStream.toByteArray(), Charset.forName(CHARSET));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -169,7 +170,7 @@ public class PgpHelper {
         PGPSecretKey secretKey = getSecretKey(privateKey);
         try {
             PBESecretKeyDecryptor decrypterFactory = new JcePBESecretKeyDecryptorBuilder()
-                    .setProvider("SC")
+                    .setProvider(SECURITY_PROVIDER)
                     .build(passphrase.toCharArray());
             return secretKey.extractPrivateKey(decrypterFactory);
         } catch (PGPException e) {
@@ -192,7 +193,7 @@ public class PgpHelper {
     public static String decrypt(PGPPrivateKey privateKey, String ciphertext) {
         try {
             // Convert the String to a InputStream.
-            byte[] encryptedBytes = ciphertext.getBytes(Charset.forName("UTF-8"));
+            byte[] encryptedBytes = ciphertext.getBytes(Charset.forName(CHARSET));
             InputStream encryptedInputStream = new ByteArrayInputStream(encryptedBytes);
             encryptedInputStream = PGPUtil.getDecoderStream(encryptedInputStream);
             // Create PGP Objects from the InputStream.
@@ -255,7 +256,7 @@ public class PgpHelper {
             // Convert the LiteralData steam into a String object.
             if (decryptedMessage instanceof PGPLiteralData) {
                 PGPLiteralData literalData = (PGPLiteralData) decryptedMessage;
-                return new String(Streams.readAll(literalData.getInputStream()), Charset.forName("UTF-8"));
+                return new String(Streams.readAll(literalData.getInputStream()), Charset.forName(CHARSET));
             }
         } catch (Exception e) {
             e.printStackTrace();

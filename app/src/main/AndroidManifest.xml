@@ -18,12 +18,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".settings.SettingsActivity" />
-        <activity
-            android:name=".secrets.SecretsActivity" />
-        <activity
-            android:name=".settings.CreateKeyActivity" />
+        <activity android:name=".unlock.UnlockActivity" />
+
+        <activity android:name=".settings.CreateKeyActivity" />
+        <activity android:name=".settings.PublicKeyActivity" />
+        <activity android:name=".settings.SettingsActivity" />
+
+        <activity android:name=".secrets.SecretsActivity" />
+
     </application>
 
 </manifest>

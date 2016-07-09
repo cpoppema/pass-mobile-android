@@ -1,9 +1,11 @@
 package mobile.android.pass.api;
 
+import com.android.volley.VolleyError;
+
 /**
- * Created by marco on 7/8/16.
+ * Callback interface to pass secrets api response to calling Activity.
  */
 public interface SecretsCallback {
     void onSecretsApiResponse(String pgpResponse);
-    void onSecretsApiFailure();
+    void onSecretsApiFailure(VolleyError error);
 }

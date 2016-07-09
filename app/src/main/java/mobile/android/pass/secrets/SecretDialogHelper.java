@@ -4,7 +4,6 @@ package mobile.android.pass.secrets;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import mobile.android.pass.R;
@@ -27,8 +26,9 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
         builder.setTitle(secret.getDomain());
         builder.setMessage(secret.getUsername() + "\n" + mPassword);
 
-        builder.setPositiveButton("COPY", this);
-        builder.setNegativeButton("OK", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(mContext.getString(R.string.dialog_button_copy), this);
+        builder.setNegativeButton(mContext.getString(R.string.dialog_button_ok),
+                new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();

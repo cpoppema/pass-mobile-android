@@ -25,6 +25,8 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.android.volley.VolleyError;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -103,7 +105,8 @@ public class SecretsActivity extends AppCompatActivity implements
 
         // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(this);
-        mSecretsApi = new SecretsApi(this, this);
+
+        initApis();
 
         if (!TextUtils.isEmpty(getIntent().getStringExtra("mPassphrase"))) {
             // Get passphrase from previous activity.
@@ -116,22 +119,34 @@ public class SecretsActivity extends AppCompatActivity implements
             mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
         }
 
-        // Setup the ListView.
+        setUpListView();
+
+        setUpRefreshLayout();
+
+        loadInitialSecrets();
+    }
+
+    private void initApis() {
+        mSecretsApi = new SecretsApi(this, this);
+        mSecretApi = new SecretApi(this, this);
+    }
+
+    private void setUpListView() {
         mListView = (ListView) findViewById(R.id.list_view_secrets);
         mSecretsAdapter = new SecretsAdapter(this);
         mListView.setAdapter(mSecretsAdapter);
         mListView.setFastScrollEnabled(true);  // FIXME: Can't fast scroll without triggering swipe-to-refresh.
+    }
 
-        // Setup the SwipeRefreshLayout.
+    private void setUpRefreshLayout() {
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_secrets);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
+    }
 
-        mSecretApi = new SecretApi(this, this);
-
-        // Load secrets.
+    private void loadInitialSecrets() {
         if (mSecrets == null) {
-
+            // Set refreshing animation.
             mSwipeRefreshLayout.setRefreshing(true);
 
             // Initial load.
@@ -140,8 +155,7 @@ public class SecretsActivity extends AppCompatActivity implements
                 public void run() {
                     // Animated busy indicator.
                     mSwipeRefreshLayout.setRefreshing(true);
-                    // Prepare the loader.
-
+                    // Get list of secrets from server.
                     mSecretsApi.getSecrets();
                 }
             });
@@ -181,6 +195,7 @@ public class SecretsActivity extends AppCompatActivity implements
         // Remember passphrase to be able to unlock the secret key on resume.
         outState.putString("mPassphrase", mPassphrase);
 
+        // Reset timeout to avoid being locked out after a screen rotate.
         mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
         // Keep track of the original time since unlock.
         outState.putInt("mTimeActivated", mTimeActivated);
@@ -232,6 +247,7 @@ public class SecretsActivity extends AppCompatActivity implements
             Log.d(TAG, "Timeout expired, finish activity");
 
             mPassphrase = null;  // TODO: Find out if this is really necessary.
+
             // Close activity, returning to the UnlockActivity.
             startActivity(new Intent(this, UnlockActivity.class));
             finish();
@@ -241,9 +257,8 @@ public class SecretsActivity extends AppCompatActivity implements
             // Get private key from storage.
             mPrivateKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
             Log.d(TAG, "Unlocked key: " + Long.toHexString(mPrivateKey.getKeyID()));
-
-//            mApi = new Api(this, mPrivateKey);
         }
+        
     }
 
     @Override
@@ -312,45 +327,33 @@ public class SecretsActivity extends AppCompatActivity implements
     /**
      * Filters the list of secrets when pressing the search button on the keyboard and the search
      * button while in the text editing mode when landscape orientation is active.
-     * FIXME: Dismiss full screen editor.
      */
     @Override
     public boolean onQueryTextSubmit(String query) {
         Log.d(TAG, "onQueryTextSubmit");
 
-        // Called when the action bar search text has changed. Update
-        // the search filter, and restart the loader to do a new query
-        // with this filter.
-        String newFilter = !TextUtils.isEmpty(query) ? query : null;
+        // Dismiss keyboard.
+        mSearchView.clearFocus();
 
-        // Don't do anything if the filter hasn't actually changed.
-        // Prevents restarting the loader when restoring state.
-        if (mCurFilter == null && newFilter == null) {
-            return true;
-        }
-        if (mCurFilter != null && mCurFilter.equals(newFilter)) {
-            return true;
-        }
-
-        mCurFilter = newFilter;
-        getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
-
-        return true;
+        return updateFilterAndRestartLoader(query);
     }
 
     /**
      * Filters the list of secrets while typing in the SearchView when portrait orientation is
      * active.
-     * FIXME: Contains the same code as onQueryTextSubmit.
      */
     @Override
     public boolean onQueryTextChange(String newText) {
         Log.d(TAG, "onQueryTextChange");
 
+        return updateFilterAndRestartLoader(newText);
+    }
+
+    private boolean updateFilterAndRestartLoader(String filterText) {
         // Called when the action bar search text has changed. Update
         // the search filter, and restart the loader to do a new query
         // with this filter.
-        String newFilter = !TextUtils.isEmpty(newText) ? newText : null;
+        String newFilter = !TextUtils.isEmpty(filterText) ? filterText : null;
 
         // Don't do anything if the filter hasn't actually changed.
         // Prevents restarting the loader when restoring state.
@@ -379,7 +382,7 @@ public class SecretsActivity extends AppCompatActivity implements
         switch (id) {
             case LOADER_ID_REFRESH:
                 // Fetch new set of secrets.
-                return new SecretsTaskLoader(this, mSecretsApi);
+                return new SecretsTaskLoader(this);
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
                 // FIXME: Looks like the first item is missing after search and clearing filter.
@@ -553,8 +556,10 @@ public class SecretsActivity extends AppCompatActivity implements
 
         // Read the first line as the password.
         String plaintext = PgpHelper.decrypt(mPrivateKey, pgpResponse);
-        String password = plaintext.split("\n")[0];
-
+        String password = null;
+        if (plaintext != null) {
+            password = plaintext.split("\n")[0];
+        }
         switch (mSecretAction) {
             case R.id.action_copy_secret_password:
                 if (password != null) {
@@ -598,8 +603,11 @@ public class SecretsActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onSecretApiFailure() {
-        Log.d(TAG, "onSecretApiFailure");
+    public void onSecretApiFailure(VolleyError error) {
+        // TODO Proper feedback on specific errors.
+        Toast.makeText(getApplicationContext(),
+                "Oops! Could not get secret...", Toast.LENGTH_LONG)
+                .show();
     }
 
     @Override
@@ -614,8 +622,11 @@ public class SecretsActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onSecretsApiFailure() {
-        Log.d(TAG, "onSecretsApiFailure");
+    public void onSecretsApiFailure(VolleyError error) {
+        // TODO Proper feedback on specific errors.
+        Toast.makeText(getApplicationContext(),
+                "Oops! Could not get secrets...", Toast.LENGTH_LONG)
+                .show();
     }
 
     @Override

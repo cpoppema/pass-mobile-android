@@ -8,8 +8,9 @@ import android.util.Log;
 
 import mobile.android.pass.utils.PgpHelper;
 
-/** Creates a keypair using a key name and passphrase as input. **/
-
+/**
+ * Creates a keypair using a key name and passphrase as input.
+ */
 public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     private static final String TAG = CreateKeyTaskLoader.class.toString();
 
@@ -18,8 +19,6 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     // Input passphrase.
     private final String mPassphrase;
 
-    // The generated keypair.
-    private PGPSecretKey mKeyPair;
     // Indicator whether or not this task was stopped.
     private boolean isStopped;
 
@@ -35,16 +34,8 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
     public PGPSecretKey loadInBackground() {
         Log.d(TAG, "loadInBackground");
 
-        try {
-            Log.d(TAG, "sleeping");
-            // FIXME: Remove delay before creating a keypair to test cancellation.
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            return null;
-        }
-
         // Generate keypair.
-        mKeyPair = PgpHelper.generateKeyPair(mKeyName, mPassphrase);
+        PGPSecretKey keyPair = PgpHelper.generateKeyPair(mKeyName, mPassphrase);
 
         // When stopped, do not return a result.
         if (isStopped || isLoadInBackgroundCanceled()) {
@@ -53,7 +44,7 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
         }
 
         Log.d(TAG, "generated");
-        return mKeyPair;
+        return keyPair;
     }
 
     @Override
@@ -62,24 +53,6 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
 
         super.deliverResult(keyPair);
     }
-
-//    @Override
-//    protected boolean onCancelLoad() {
-//        Log.d(TAG, "onCancelLoad");
-//        return super.onCancelLoad();
-//    }
-//
-//    @Override
-//    protected void onForceLoad() {
-//        Log.d(TAG, "onForceLoad");
-//        super.onForceLoad();
-//    }
-//
-//    @Override
-//    protected void onReset() {
-//        Log.d(TAG, "onReset");
-//        super.onReset();
-//    }
 
     @Override
     protected void onStartLoading() {

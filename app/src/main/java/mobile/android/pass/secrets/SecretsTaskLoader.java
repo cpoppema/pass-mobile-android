@@ -1,25 +1,19 @@
 package mobile.android.pass.secrets;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import android.content.Context;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.provider.BaseColumns;
 import android.support.v4.content.AsyncTaskLoader;
-import android.util.Log;
 
 import java.util.ArrayList;
 
-import mobile.android.pass.api.Api;
-
-/** Loads a list of secrets into a @Cursor. **/
-
+/**
+ * Loads a list of secrets into a @Cursor.
+ */
 public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
     private static final String TAG = SecretsActivity.class.toString();
 
-    private Api mApi;
     // Data structure to store retrieved or filtered secrets in.
     private Cursor mCursor;
     // Query used to filter secrets.
@@ -28,10 +22,8 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
     private ArrayList<Secret> mOriginalSecrets;
 
     /** Constructor used when fetching the most recent list of remote secrets. **/
-    public SecretsTaskLoader(Context context, Api api) {
+    public SecretsTaskLoader(Context context) {
         super(context);
-
-        mApi = api;
     }
 
     /** Constructor used when applying (or resetting) a filter to a local set of secrets. **/
@@ -45,57 +37,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
     @Override
     public Cursor loadInBackground() {
         // Contains the list of remote secrets.
-        ArrayList<Secret> secrets = null;
-
-        if (mOriginalSecrets == null) {
-            Log.d(TAG, "sleeping");
-            try {
-                // FIXME: remove simulating network access delay.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return null;
-            }
-
-//            if (mApi != null) {
-//                secrets = mApi.getSecrets();
-//            } else {
-
-            // Build a list of dummy secrets in JSON.
-            String json = "[\n";
-            char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-            int listSize = 26 * 10;
-            for (int i = 0; i < alphabet.length; i++) {
-                for (int j = 0; j < listSize / alphabet.length; j++) {
-                    json += "  {\n" +
-                            "    \"domain\": \"" + Character.toString(alphabet[i]) + ".com\",\n" +
-                            "    \"path\": \"gmail.com\",\n" +
-                            "    \"username\": \"rcaldwell\",\n" +
-                            "    \"username_normalized\": \"rcaldwell\"\n" +
-                            "  }";
-                    if ((i * listSize / alphabet.length + j) < listSize - 1) {
-                        json += ",";
-                    }
-                }
-            }
-            json += "]";
-
-            // Interpret JSON into a list.
-            JSONArray jsonArray = null;
-            try {
-                jsonArray = new JSONArray(json);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            if (jsonArray != null) {
-                secrets = Secret.fromJson(jsonArray);
-            }
-//            }
-
-        } else {
-            Log.d(TAG, "NOT sleeping");
-            // Using local set of secrets.
-            secrets = mOriginalSecrets;
-        }
+        ArrayList<Secret> secrets = mOriginalSecrets;
 
         // When there is a list of secrets, create a MatrixCursor from it and apply a filter if any.
         MatrixCursor cursor = null;
@@ -126,7 +68,6 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
                 cursor.moveToFirst();
             }
         }
-
         return cursor;
     }
 

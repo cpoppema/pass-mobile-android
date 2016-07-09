@@ -15,7 +15,6 @@ import java.util.ArrayList;
  * Contains all the data to show it in the list of secrets and to uniquely identify it when
  * retrieving the password for it.
  */
-
 public class Secret implements Parcelable {
     public static final Parcelable.Creator<Secret> CREATOR = new Parcelable.Creator<Secret>() {
         @Override
@@ -107,7 +106,12 @@ public class Secret implements Parcelable {
         dest.writeStringArray(new String[]{mDomain, mPath, mUsername, mUsernameNormalized});
     }
 
-    /** Returns true if @needle was found in @hay using fuzzy matching. **/
+    /**
+     * Returns true if @needle was found in @hay using fuzzy matching.
+     * @param hay
+     * @param needle
+     * @return
+     */
     private boolean fuzzyContains(String hay, String needle) {
         hay = hay.toLowerCase();
         needle = needle.toLowerCase();

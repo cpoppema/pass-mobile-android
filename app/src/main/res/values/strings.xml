@@ -63,4 +63,7 @@
     <string name="error_field_required">This field is required</string>
 
     <string name="progress_generating_key">Generating key</string>
+
+    <string name="dialog_button_copy">COPY</string>
+    <string name="dialog_button_ok">OK</string>
 </resources>

@@ -52,10 +52,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // Setup the inputs and button.
-        mCreateKeyFormView = findViewById(R.id.generate_key_form);
-        mKeyNameView = (EditText) findViewById(R.id.key_name);
-        mPassphraseView = (EditText) findViewById(R.id.passphrase);
-        mCreateKeyButton = (Button) findViewById(R.id.generate_key_button);
+        setViews();
 
         // Pre-fill key name if there is one.
         mStorageHelper = new StorageHelper(this);
@@ -71,6 +68,13 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
                 createKeypair();
             }
         });
+    }
+
+    private void setViews() {
+        mCreateKeyFormView = findViewById(R.id.generate_key_form);
+        mKeyNameView = (EditText) findViewById(R.id.key_name);
+        mPassphraseView = (EditText) findViewById(R.id.passphrase);
+        mCreateKeyButton = (Button) findViewById(R.id.generate_key_button);
     }
 
     @Override

@@ -1,7 +1,6 @@
 package mobile.android.pass.api;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -12,9 +11,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Created by marco on 7/8/16.
+ * Api class for getting a specific secret.
  */
 public class SecretApi extends Api implements Response.Listener<JSONObject>, Response.ErrorListener {
+    private static final String BODY_PATH = "path";
+    private static final String BODY_USERNAME = "username";
+
     private SecretCallback mCallback;
 
     public SecretApi(Context context, SecretCallback callback) {
@@ -25,8 +27,8 @@ public class SecretApi extends Api implements Response.Listener<JSONObject>, Res
     public void getSecret(String path, String username) {
         JSONObject body = getDefaultJsonBody();
         try {
-            body.put("path", path);
-            body.put("username", username);
+            body.put(BODY_PATH, path);
+            body.put(BODY_USERNAME, username);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -44,13 +46,13 @@ public class SecretApi extends Api implements Response.Listener<JSONObject>, Res
 
     @Override
     public void onErrorResponse(VolleyError error) {
-
+        mCallback.onSecretApiFailure(error);
     }
 
     @Override
     public void onResponse(JSONObject response) {
         try {
-            String pgpMessage = response.getString("response");
+            String pgpMessage = response.getString(mResponseKey);
             mCallback.onSecretApiResponse(pgpMessage);
         } catch (JSONException e) {
             e.printStackTrace();
