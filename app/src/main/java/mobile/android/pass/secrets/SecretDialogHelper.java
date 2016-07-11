@@ -19,12 +19,15 @@ public class SecretDialogHelper implements DialogInterface.OnClickListener {
         mContext = context;
     }
 
-    public void showSecretDialog(Secret secret, String password) {
-        mPassword = password;
+    public void showSecretDialog(Secret secret, String plaintext) {
+        // Read the first line as the password.
+        if (plaintext != null) {
+            mPassword = plaintext.split("\n")[0];
+        }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(secret.getDomain());
-        builder.setMessage(secret.getUsername() + "\n" + mPassword);
+        builder.setMessage(secret.getUsername() + "\n" + plaintext);
 
         builder.setPositiveButton(mContext.getString(R.string.dialog_button_copy), this);
         builder.setNegativeButton(mContext.getString(R.string.dialog_button_ok),

@@ -25,8 +25,6 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.android.volley.VolleyError;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -580,13 +578,8 @@ public class SecretsActivity extends AppCompatActivity implements
     public void onSecretApiResponse(String pgpResponse) {
         Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
 
-        // Read the first line as the password.
         String plaintext = PgpHelper.decrypt(mPrivateKey, pgpResponse);
-        String password = null;
-        if (plaintext != null) {
-            password = plaintext.split("\n")[0];
-        }
-        handlePasswordActions(secret, password);
+        handlePasswordActions(secret, plaintext);
 
         // Reset action.
         mSecretAction = -1;
