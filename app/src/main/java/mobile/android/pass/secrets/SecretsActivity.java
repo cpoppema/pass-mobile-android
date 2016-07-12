@@ -148,16 +148,12 @@ public class SecretsActivity extends AppCompatActivity implements
 
     private void loadInitialSecrets() {
         if (mSecrets == null) {
-            // Set refreshing animation.
-            mSwipeRefreshLayout.setRefreshing(true);
-
             // Initial load.
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
-                    // Animated busy indicator.
-                    mSwipeRefreshLayout.setRefreshing(true);
                     // Get list of secrets from server.
+                    mSwipeRefreshLayout.setRefreshing(true);
                     mSecretsApi.getSecrets();
                 }
             });
@@ -605,6 +601,8 @@ public class SecretsActivity extends AppCompatActivity implements
 
     @Override
     public void onSecretsApiFailure(String errorMessage) {
+        mSwipeRefreshLayout.setRefreshing(false);
+
         Toast.makeText(getApplicationContext(),
                 errorMessage, Toast.LENGTH_LONG)
                 .show();
