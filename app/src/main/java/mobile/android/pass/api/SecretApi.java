@@ -39,7 +39,12 @@ public class SecretApi extends Api implements Response.Listener<JSONObject>, Res
                 body,
                 this,  // Response.Listener
                 this  // Response.ErrorListener
-        );
+        ) {
+            @Override
+            public String getBodyContentType() {
+                return "application/json; charset=utf-8";
+            }
+        };
 
         mRequestQueue.add(request);
     }
