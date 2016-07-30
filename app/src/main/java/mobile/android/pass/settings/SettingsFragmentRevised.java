@@ -1,38 +1,41 @@
 package mobile.android.pass.settings;
 
+import android.app.Fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.preference.PreferenceGroup;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import mobile.android.pass.R;
 import mobile.android.pass.utils.ClipboardHelper;
 import mobile.android.pass.utils.StorageHelper;
 
-/** Shows a list of (im)mutable preferences and key information. **/
 
-public class SettingsFragment extends PreferenceFragment
+public class SettingsFragmentRevised extends Fragment
         implements SharedPreferences.OnSharedPreferenceChangeListener,
-        Preference.OnPreferenceClickListener {
-    private static final String TAG = SettingsFragment.class.toString();
+        View.OnClickListener {
+    private static final String TAG = SettingsFragmentRevised.class.toString();
 
+    // Reference to preferences.
+    private SharedPreferences mSharedPreferences;
     // Storage reference.
     private StorageHelper mStorageHelper;
     // Restore/save ContextMenu from/to this state.
     private boolean mContextMenuOpen = false;
     // Reference to the Preference with the ContextMenu.
-    private Preference mKeyIdPreference;
+    private View mKeyIdPreference;
 
-    public SettingsFragment() {
+    public SettingsFragmentRevised() {
         // Required empty public constructor.
     }
 
@@ -42,22 +45,18 @@ public class SettingsFragment extends PreferenceFragment
 
         super.onCreate(savedInstanceState);
 
-        // TODO: Is this necessary ? Should make SettingsActivity.onCreate easier since there won't ever be anything on the BackStack.
-        // Retain this fragment's state when config changes.
-        setRetainInstance(true);
-
         // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(getActivity());
 
-        // Load the preferences from an XML resource.
-        addPreferencesFromResource(R.xml.activity_settings);
+        // Get references through activity.
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+    }
 
-        // Load summaries for preferences.
-        initSummaries();
-        setEnabledStateForKeyID();
-
-        // Update summaries on change.
-        getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // Instead of setContentView, inflate here to trigger a view to be created so getView()
+        // actually returns something and we can register a ContextMenu for it.
+        return inflater.inflate(R.layout.fragment_settings, null);
     }
 
     @Override
@@ -66,7 +65,14 @@ public class SettingsFragment extends PreferenceFragment
 
         Log.i(TAG, "onViewCreated");
 
-        // getView() returns null in onCreate, so do this in onViewCreated.
+        // Load summaries for preferences.
+        initSummaries();
+        setEnabledStateForKeyID();
+
+        // Update summaries on change.
+        mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
+
+        // getView() returns null in onCreate/onCreateView, so do this in onViewCreated.
         registerForContextMenu(view);
     }
 
@@ -101,25 +107,12 @@ public class SettingsFragment extends PreferenceFragment
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-
-        Log.i(TAG, "onResume");
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "onDestroy");
 
-        // FIXME: Close open EditTextPreference's Dialog
-        // NOTE: Symptoms (besides the exception): having to close multiple PreferenceDialog's that don't have an EditText any more.
-        // NOTE: setRetainInstance(false) doesn't make a difference
-        // https://code.google.com/p/android/issues/detail?id=185211
-        // https://code.google.com/p/android/issues/detail?id=186160
-
         // These listeners will stack, so unregister.
-        getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
+        mSharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     private void showContextMenu() {
@@ -130,7 +123,6 @@ public class SettingsFragment extends PreferenceFragment
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
         Log.i(TAG, "onCreateContextMenu");
 
         // Inflate from XML resource.
@@ -171,25 +163,23 @@ public class SettingsFragment extends PreferenceFragment
     /** Enables/disables interaction for @mKeyIdPreference if a local key exists. **/
     private void setEnabledStateForKeyID() {
         if (mKeyIdPreference == null) {
-            mKeyIdPreference = findPreference(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
+            mKeyIdPreference = getActivity().findViewById(R.id.pref_key_public_key);
         }
 
         if (TextUtils.isEmpty(mStorageHelper.getKeyID())) {
             // Disable interaction.
             mKeyIdPreference.setEnabled(false);
-            mKeyIdPreference.setOnPreferenceClickListener(null);
+            mKeyIdPreference.setOnClickListener(null);
         } else {
             // Enable interaction.
             mKeyIdPreference.setEnabled(true);
-            mKeyIdPreference.setOnPreferenceClickListener(this);
+            mKeyIdPreference.setOnClickListener(this);
         }
     }
 
-
-
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        setSummary(findPreference(key), key);
+        setSummary(key);
 
         Log.i(TAG, "Preference changed: " + key);
 
@@ -200,39 +190,42 @@ public class SettingsFragment extends PreferenceFragment
 
     /** Loops through all preferences in the PreferenceScreen and set its initial summary. **/
     private void initSummaries() {
-        for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); ++i) {
-            Preference preference = getPreferenceScreen().getPreference(i);
-            if (preference instanceof PreferenceGroup) {
-                PreferenceGroup preferenceGroup = (PreferenceGroup) preference;
-                for (int j = 0; j < preferenceGroup.getPreferenceCount(); ++j) {
-                    Preference singlePref = preferenceGroup.getPreference(j);
-                    setSummary(singlePref, singlePref.getKey());
-                }
-            } else {
-                setSummary(preference, preference.getKey());
+        setSummary(StorageHelper.StorageKey.SERVER_ADDRESS.toString());
+        setSummary(StorageHelper.StorageKey.PUBLIC_KEY_NAME.toString());
+        setSummary(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString());
+    }
+
+    /** Sets summary for a single Preference. **/
+    private void setSummary(String key) {
+        if (key == null) {
+            return;
+        }
+
+        String summary = mSharedPreferences.getString(key, "");
+        if (!summary.isEmpty()) {
+            TextView textView = null;
+            if (key == StorageHelper.StorageKey.SERVER_ADDRESS.toString()) {
+                textView = (TextView) getActivity().findViewById(R.id.summary_server);
+            } else if (key == StorageHelper.StorageKey.PUBLIC_KEY_NAME.toString()) {
+                textView = (TextView) getActivity().findViewById(R.id.summary_key_name);
+            } else if (key == StorageHelper.StorageKey.PUBLIC_KEY_ID.toString()) {
+                textView = (TextView) getActivity().findViewById(R.id.summary_public_key);
+            }
+
+            if (textView != null) {
+                textView.setText(summary);
             }
         }
     }
 
-    /** Sets summary for a single Preference. **/
-    private void setSummary(Preference preference, String key) {
-        if (key == null || preference == null) {
-            return;
-        }
-
-        SharedPreferences sharedPreferences = getPreferenceManager().getSharedPreferences();
-        String summary = sharedPreferences.getString(key, "");
-        if (!summary.isEmpty()) {
-            preference.setSummary(summary);
-        }
-    }
-
     @Override
-    public boolean onPreferenceClick(Preference preference) {
-        if (preference.getKey().equals(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
-            showContextMenu();
-            return true;
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.pref_key_public_key:
+                showContextMenu();
+                break;
+            default:
+                break;
         }
-        return false;
     }
 }

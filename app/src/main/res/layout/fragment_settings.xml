@@ -1,0 +1,197 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!--PreferenceCategory container-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!--PreferenceCategory title-->
+                <TextView
+                    android:id="@+id/title_server_pref_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@android:style/TextAppearance.Material.Body2"
+                    android:textColor="?android:attr/colorAccent"
+                    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+                    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+                    android:paddingTop="16dip"
+                    android:text="@string/pref_group_title_server" />
+
+                <!--Preference container-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="?attr/listPreferredItemHeightSmall"
+                    android:gravity="center_vertical"
+                    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+                    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clipToPadding="false">
+
+                    <RelativeLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp">
+
+                        <!--Preference title-->
+                        <TextView android:id="@+id/title_server"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:singleLine="true"
+                            android:textAppearance="?attr/textAppearanceListItem"
+                            android:ellipsize="marquee"
+                            android:text="@string/pref_title_server" />
+
+                        <!--Preference summary-->
+                        <TextView android:id="@+id/summary_server"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_below="@id/title_server"
+                            android:layout_alignStart="@id/title_server"
+                            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:maxLines="10" />
+
+                    </RelativeLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!--PreferenceCategory container-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!--PreferenceCategory title-->
+                <TextView
+                    android:id="@+id/title_key_pref_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@android:style/TextAppearance.Material.Body2"
+                    android:textColor="?android:attr/colorAccent"
+                    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+                    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+                    android:paddingTop="16dip"
+                    android:text="@string/pref_group_title_key" />
+
+                <!--Preference container-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="?attr/listPreferredItemHeightSmall"
+                    android:gravity="center_vertical"
+                    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+                    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+                    android:clipToPadding="false">
+
+                    <RelativeLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp">
+
+                        <!--Preference title-->
+                        <TextView android:id="@+id/title_key_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:singleLine="true"
+                            android:textAppearance="?attr/textAppearanceListItem"
+                            android:ellipsize="marquee"
+                            android:text="@string/pref_title_key_name" />
+
+                        <!--Preference summary-->
+                        <TextView android:id="@+id/summary_key_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_below="@id/title_key_name"
+                            android:layout_alignStart="@id/title_key_name"
+                            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:maxLines="10" />
+
+                    </RelativeLayout>
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:minHeight="1px"
+                    android:background="?android:attr/listDivider" />
+
+                <!--Preference container-->
+                <LinearLayout
+                    android:id="@+id/pref_key_public_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="?attr/listPreferredItemHeightSmall"
+                    android:gravity="center_vertical"
+                    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+                    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clipToPadding="false">
+
+                    <RelativeLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp">
+
+                        <!--Preference title-->
+                        <TextView android:id="@+id/title_public_key"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:singleLine="true"
+                            android:textAppearance="?attr/textAppearanceListItem"
+                            android:ellipsize="marquee"
+                            android:text="@string/pref_title_public_key" />
+
+                        <!--Preference summary-->
+                        <TextView android:id="@+id/summary_public_key"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_below="@id/title_public_key"
+                            android:layout_alignStart="@id/title_public_key"
+                            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:maxLines="10"
+                            android:text="@string/pref_summary_public_key" />
+
+                    </RelativeLayout>
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:minHeight="1px"
+                    android:background="?android:attr/listDivider" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>
