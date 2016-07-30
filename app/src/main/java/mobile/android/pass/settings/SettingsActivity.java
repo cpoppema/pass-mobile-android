@@ -18,7 +18,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = SettingsActivity.class.toString();
 
     // Fragment reference.
-    private SettingsFragment mSettingsFragment;
+    private SettingsFragmentRevised mSettingsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,10 +27,10 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Attempt to get a previously created SettingsFragment reference.
-        mSettingsFragment = (SettingsFragment) getFragmentManager().findFragmentByTag("" + SETTINGS_DIALOG_TAG);
+        mSettingsFragment = (SettingsFragmentRevised) getFragmentManager().findFragmentByTag("" + SETTINGS_DIALOG_TAG);
         // Non-null means it is being retained, no need to create it again.
         if (mSettingsFragment == null) {
-            mSettingsFragment = new SettingsFragment();
+            mSettingsFragment = new SettingsFragmentRevised();
 
             // Display the fragment as the main content.
             getFragmentManager().beginTransaction()
