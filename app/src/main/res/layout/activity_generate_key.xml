@@ -27,8 +27,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/prompt_key_name"
                     android:inputType="textNoSuggestions"
-                    android:maxLines="1"
-                    android:singleLine="true" />
+                    android:maxLines="1" />
             </android.support.design.widget.TextInputLayout>
 
             <android.support.design.widget.TextInputLayout
@@ -41,8 +40,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/prompt_passphrase"
                     android:inputType="textPassword"
-                    android:maxLines="1"
-                    android:singleLine="true" />
+                    android:maxLines="1" />
             </android.support.design.widget.TextInputLayout>
 
             <Button

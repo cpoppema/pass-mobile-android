@@ -79,6 +79,10 @@ public class StorageHelper {
         return this.getString(StorageKey.SERVER_ADDRESS);
     }
 
+    public void putServerAddress(String serverAddress) {
+        this.putString(StorageKey.SERVER_ADDRESS, serverAddress);
+    }
+
     public enum StorageKey {
         PRIVATE_KEY("prey_key_private_key"),
         PUBLIC_KEY("prey_key_public_key"),

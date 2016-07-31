@@ -16,10 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 
-import org.json.JSONException;
-
 import mobile.android.pass.R;
-import mobile.android.pass.api.Api;
 import mobile.android.pass.settings.SettingsActivity;
 import mobile.android.pass.utils.StorageHelper;
 

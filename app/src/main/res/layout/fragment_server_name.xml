@@ -13,10 +13,9 @@
         android:orientation="vertical">
 
         <EditText
-            android:id="@+id/unlock_passphrase"
+            android:id="@+id/server_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPassword"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
             android:maxLines="1" />

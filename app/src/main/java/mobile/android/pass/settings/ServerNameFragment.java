@@ -1,0 +1,144 @@
+package mobile.android.pass.settings;
+
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.DialogFragment;
+import android.support.v7.app.AlertDialog;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+
+import mobile.android.pass.R;
+import mobile.android.pass.utils.StorageHelper;
+
+/** Shows a dialog to edit the server address using for all api requests. **/
+
+public class ServerNameFragment extends DialogFragment {
+    private static final String TAG = ServerNameFragment.class.toString();
+
+    // Storage reference.
+    private StorageHelper mStorageHelper;
+
+    public ServerNameFragment() {
+        // Required empty public constructor.
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate");
+
+        // Retain this fragment's state when config changes.
+        setRetainInstance(true);
+
+        mStorageHelper = new StorageHelper(getActivity());
+    }
+
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateDialog");
+        // Do not call super, build our own dialog to set title and add button.
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.fragment_server_name_title)
+                // OnClickListener is set below, not here.
+                .setPositiveButton(R.string.fragment_server_name_button_ok, null)
+                .setNegativeButton(R.string.fragment_server_name_button_cancel, null);
+
+        // Call default fragment methods to set View for Dialog from builder.
+        View v = onCreateView(getActivity().getLayoutInflater(), null, null);
+        onViewCreated(v, null);
+        builder.setView(v);
+
+        // Cannot put this in onCreateView nor onViewCreated.
+        final EditText serverInput = (EditText) v.findViewById(R.id.server_name);
+        serverInput.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        if (!TextUtils.isEmpty(mStorageHelper.getServerAddress())) {
+            serverInput.setText(mStorageHelper.getServerAddress());
+        } else {
+            serverInput.setText("https://");
+        }
+
+        // Create dialog to return.
+        final AlertDialog alertDialog = builder.create();
+
+        // Bind OnClickListener to the button within the OnShowListener, otherwise the dialog
+        // will ALWAYS be dismissed.
+        alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(final DialogInterface dialog) {
+                Button button = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String serverAddress = serverInput.getText().toString();
+
+                        // Validate server address.
+                        boolean valid = false;
+                        if (!serverAddress.isEmpty()) {
+                            valid = (serverAddress.startsWith("http://") && serverAddress.length() > 7 ||
+                                    serverAddress.startsWith("https://") && serverAddress.length() > 8);
+                        }
+
+                        if (valid) {
+                            // Reset input.
+                            serverInput.setError(null);
+                            serverInput.getText().clear();
+
+                            // Save and dismiss.
+                            mStorageHelper.putServerAddress(serverAddress);
+                            alertDialog.dismiss();
+                        } else {
+                            // Give feedback.
+                            Log.i(TAG, "Show input feedback");
+                            serverInput.setError(getString(R.string.fragment_server_name_invalid));
+                        }
+                    }
+                });
+            }
+        });
+
+        // Let the activity know this fragment has been dismissed.
+        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                ((SettingsActivity) getActivity()).setDialogTag(SettingsActivity.NO_DIALOG_TAG);
+            }
+        });
+
+        if (savedInstanceState == null) {
+            // Show keyboard.
+            alertDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+
+        return alertDialog;
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateView");
+        return inflater.inflate(R.layout.fragment_server_name, container, false);
+    }
+
+    @Override
+    public void onDestroyView() {
+        Log.i(TAG, "onDestroyView");
+        // FIXME: Remove when unnecessary: https://code.google.com/p/android/issues/detail?id=17423
+        if (getDialog() != null && getRetainInstance()) {
+            getDialog().setDismissMessage(null);
+        }
+
+        super.onDestroyView();
+    }
+}
