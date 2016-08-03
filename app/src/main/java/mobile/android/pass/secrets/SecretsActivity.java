@@ -22,6 +22,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -453,13 +454,34 @@ public class SecretsActivity extends AppCompatActivity implements
             mListView.post(new Runnable() {
                 @Override
                 public void run() {
+                    // Restore the PopupMenu after the list is restored to it's previous state.
+                    if (mPopupMenuViewPosition != NO_POPUP) {
+                        mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                            @Override
+                            public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+                            }
+
+                            @Override
+                            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                                // Calling onRestoreInstanceState will trigger onScroll twice:
+                                // once when the items are loaded and again after the position is
+                                // restored. Show the popup after the second action happens. Of
+                                // course, depending on the position the popup might be in on
+                                // the first case happens if position < visibleItemCount, but it
+                                // won't be a problem then.
+                                if (mPopupMenuViewPosition >= firstVisibleItem && mPopupMenuViewPosition < firstVisibleItem + visibleItemCount) {
+                                    showPopup(mPopupMenuViewPosition);
+                                    // Don't do this again! At least until the next config change.
+                                    mListView.setOnScrollListener(null);
+                                }
+                            }
+                        });
+                    }
+
                     mListView.requestFocus();
                     mListView.onRestoreInstanceState(mListViewState);
                     mListViewState = null;
-                    // Restore the PopupMenu after the list is restored to it's previous state.
-                    if (mPopupMenuViewPosition != NO_POPUP) {
-                        showPopup(mPopupMenuViewPosition);
-                    }
                 }
             });
         }
@@ -499,9 +521,10 @@ public class SecretsActivity extends AppCompatActivity implements
 
         if (popupMenuViewPosition < firstListItemPosition || popupMenuViewPosition > lastListItemPosition) {
             // Get the View for the not yet rendered position @popupMenuViewPosition.
+            // NOTE: This should not happen with the delay showPopup is called after restoring
+            // mListViewState.
             Log.d(TAG, "getView()");
 
-            // FIXME: getView() positions mPopupMenu in the top left corner of the screen when restoring.
             view = mListView.getAdapter().getView(popupMenuViewPosition, null, mListView);
         } else {
             // Get the already available View for position @popupMenuViewPosition.
@@ -531,27 +554,18 @@ public class SecretsActivity extends AppCompatActivity implements
             }
         });
 
-        // Show the PopupMenu inside a Runnable because it is anchored to a View that might not be
-        // rendered yet.
-        anchorView.post(new Runnable() {
-            @Override
-            public void run() {
-                // Check for finishing state in case the timeout expired.
-                if (!isFinishing()) {
-                    // Show menu.
-                    mPopupMenu.show();
+        // Check for finishing state in case the timeout expired.
+        if (!isFinishing()) {
+            // Show menu.
+            mPopupMenu.show();
 
-                    // Re-position immediately so it is positioned on top of anchorView (PopupMenu has no
-                    // OnShowListener).
-                    ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) mPopupMenu.getDragToOpenListener();
-                    Log.d(TAG, "Popup horizontal offset: -" + listener.getPopup().getWidth() + " + " + anchorView.getWidth());
-                    listener.getPopup().setHorizontalOffset(-listener.getPopup().getWidth() + anchorView.getWidth());
-                    Log.d(TAG, "Popup vertical offset: -" + anchorView.getHeight());
-                    listener.getPopup().setVerticalOffset(-anchorView.getHeight());
-                    listener.getPopup().show();
-                }
-            }
-        });
+            // Re-position immediately so it is positioned on top of anchorView (PopupMenu has no
+            // OnShowListener).
+            ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) mPopupMenu.getDragToOpenListener();
+            listener.getPopup().setHorizontalOffset(-listener.getPopup().getWidth() + anchorView.getWidth());
+            listener.getPopup().setVerticalOffset(-anchorView.getHeight());
+            listener.getPopup().show();
+        }
     }
 
     /** Do something when clicking on different parts of a single list item. **/
