@@ -173,16 +173,8 @@ public class UnlockActivity extends AppCompatActivity {
 
     /** Render a new blank unlock dialog, discarding any that already exists. **/
     private void showUnlockDialog() {
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        Fragment prev = getSupportFragmentManager().findFragmentByTag("" + UNLOCK_DIALOG_TAG);
-        if (prev != null) {
-            ft.remove(prev);
-        }
-        ft.addToBackStack(null);
-
-        // Create and show the dialog.
         UnlockFragment fragment = new UnlockFragment();
-        fragment.show(ft, "" + UNLOCK_DIALOG_TAG);
+        fragment.show(getSupportFragmentManager(), "" + UNLOCK_DIALOG_TAG);
     }
 
     /** Render a dialog that tells the user to navigate to the settings. **/

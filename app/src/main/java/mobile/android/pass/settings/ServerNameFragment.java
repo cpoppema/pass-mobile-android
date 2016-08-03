@@ -37,8 +37,8 @@ public class ServerNameFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
 
-        // Retain this fragment's state when config changes.
-        setRetainInstance(true);
+        // All views (in this case just one) we want to retain on a config change (e.g. rotation),
+        // is handled automatically because it has an id. No need to call setRetainInstance(true).
 
         mStorageHelper = new StorageHelper(getActivity());
     }
@@ -129,16 +129,5 @@ public class ServerNameFragment extends DialogFragment {
                              @Nullable Bundle savedInstanceState) {
         Log.i(TAG, "onCreateView");
         return inflater.inflate(R.layout.fragment_server_name, container, false);
-    }
-
-    @Override
-    public void onDestroyView() {
-        Log.i(TAG, "onDestroyView");
-        // FIXME: Remove when unnecessary: https://code.google.com/p/android/issues/detail?id=17423
-        if (getDialog() != null && getRetainInstance()) {
-            getDialog().setDismissMessage(null);
-        }
-
-        super.onDestroyView();
     }
 }

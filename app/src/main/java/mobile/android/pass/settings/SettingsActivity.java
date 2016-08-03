@@ -259,16 +259,8 @@ public class SettingsActivity extends AppCompatActivity
 
     /** Render a dialog for editing the server address. **/
     private void showServerNameDialog() {
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        Fragment prev = getSupportFragmentManager().findFragmentByTag("" + SERVER_NAME_DIALOG_TAG);
-        if (prev != null) {
-            ft.remove(prev);
-        }
-        ft.addToBackStack(null);
-
-        // Create and show the dialog.
         ServerNameFragment fragment = new ServerNameFragment();
-        fragment.show(ft, "" + SERVER_NAME_DIALOG_TAG);
+        fragment.show(getSupportFragmentManager(), "" + SERVER_NAME_DIALOG_TAG);
     }
 
     @Override

@@ -38,10 +38,10 @@ public class UnlockFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate");
 
-        // TODO: Is this necessary ? Should make showUnlockDialog easier since there won't ever be anything on the BackStack.
-        // Retain this fragment's state when config changes.
-        setRetainInstance(true);
+        // All views (in this case just one) we want to retain on a config change (e.g. rotation),
+        // is handled automatically because it has an id. No need to call setRetainInstance(true).
 
+        // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(getActivity());
     }
 
@@ -125,16 +125,5 @@ public class UnlockFragment extends DialogFragment {
                              @Nullable Bundle savedInstanceState) {
         Log.i(TAG, "onCreateView");
         return inflater.inflate(R.layout.fragment_unlock, container, false);
-    }
-
-    @Override
-    public void onDestroyView() {
-        Log.i(TAG, "onDestroyView");
-        // FIXME: Remove when unnecessary: https://code.google.com/p/android/issues/detail?id=17423
-        if (getDialog() != null && getRetainInstance()) {
-            getDialog().setDismissMessage(null);
-        }
-
-        super.onDestroyView();
     }
 }
