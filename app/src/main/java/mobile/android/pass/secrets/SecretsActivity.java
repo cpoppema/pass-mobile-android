@@ -222,6 +222,10 @@ public class SecretsActivity extends AppCompatActivity implements
         mCurFilter = savedInstanceState.getString("mCurFilter");
         mListViewState = savedInstanceState.getParcelable("mListViewState");
         mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
+        if (mPopupMenuViewPosition != NO_POPUP) {
+            // Restore position to be able to get the secret after clicking the PopupMenu.
+            mCurrentSecretPosition = mPopupMenuViewPosition;
+        }
         mPassphrase = savedInstanceState.getString("mPassphrase");
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
 
@@ -452,13 +456,12 @@ public class SecretsActivity extends AppCompatActivity implements
                     mListView.requestFocus();
                     mListView.onRestoreInstanceState(mListViewState);
                     mListViewState = null;
+                    // Restore the PopupMenu after the list is restored to it's previous state.
+                    if (mPopupMenuViewPosition != NO_POPUP) {
+                        showPopup(mPopupMenuViewPosition);
+                    }
                 }
             });
-        }
-
-        // Restore open PopupMenu.
-        if (mPopupMenuViewPosition != NO_POPUP) {
-            showPopup(mPopupMenuViewPosition);
         }
     }
 
@@ -481,7 +484,7 @@ public class SecretsActivity extends AppCompatActivity implements
     }
 
     /** Shows the PopupMenu for the view at position @popupMenuViewPosition in the ListView. **/
-    private void showPopup(final int popupMenuViewPosition) {
+    private void showPopup(int popupMenuViewPosition) {
         Log.d(TAG, "showPopup: " + popupMenuViewPosition);
         mPopupMenuViewPosition = popupMenuViewPosition;
 
