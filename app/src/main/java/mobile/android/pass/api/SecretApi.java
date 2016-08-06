@@ -58,7 +58,7 @@ public class SecretApi extends Api implements Response.Listener<JSONObject>, Res
     public void onResponse(JSONObject response) {
         try {
             String pgpMessage = response.getString(mResponseKey);
-            mCallback.onSecretApiResponse(pgpMessage);
+            mCallback.onSecretApiSuccess(pgpMessage);
         } catch (JSONException e) {
             e.printStackTrace();
         }

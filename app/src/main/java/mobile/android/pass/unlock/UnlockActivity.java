@@ -4,8 +4,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutCompat;
@@ -25,9 +23,9 @@ import mobile.android.pass.utils.StorageHelper;
 public class UnlockActivity extends AppCompatActivity {
     // Indicates there is no popup visible.
     public static final int NO_DIALOG_TAG = -1;
-    // Indicates the informational popup (goto settings) is visible.
+    // Indicates the informational popup (goto settings).
     public static final int SETTINGS_DIALOG_TAG = 0;
-    // Indicates the unlock dialog is visible.
+    // Indicates the unlock dialog.
     public static final int UNLOCK_DIALOG_TAG = 1;
 
     private static final String TAG = UnlockActivity.class.toString();

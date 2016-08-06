@@ -47,20 +47,22 @@ public class SecretsActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener, SecretsCallback,
         SecretCallback,  PopupMenu.OnMenuItemClickListener {
     private static final String TAG = SecretsActivity.class.toString();
+    // Indicates the dialog displaying a secret.
+    private static int SECRET_DIALOG_TAG = 0;
 
     // Loader ID for fetching secrets.
     private final int LOADER_ID_REFRESH = 0;
     // Loader ID for filtering last known secrets.
     private final int LOADER_ID_FILTER = 1;
-    // Indicates there is no popup visible.
-    private final int NO_POPUP = -1;
+    // Indicates there is no secret used for a popup or dialog.
+    private final int NO_ACTIVE_SECRET = -1;
     // When returning to this activity, it will be closed when this timeout in seconds has expired.
     private final int TIMEOUT_AFTER = 30;
 
-    private SecretsApi mSecretsApi;
-    private SecretApi mSecretApi;
-    // Active query text for mSearchView.
-    private String mCurFilter;
+    // Restore/save position from/to this.
+    private int mCurrentSecretPosition = NO_ACTIVE_SECRET;
+    // Indicates what to do when the API gets a response.
+    private int mCurrentSecretAction = -1;
     // Layout reference.
     private ListView mListView;
     // Restore/save layout state from/to this.
@@ -69,35 +71,34 @@ public class SecretsActivity extends AppCompatActivity implements
     private String mPassphrase;
     // View reference.
     private PopupMenu mPopupMenu;
-    // Restore/save position from/to this.
-    private int mPopupMenuViewPosition = NO_POPUP;
-    // Key used to decrypt api responses.
+    // Key used to decrypt API responses.
     private PGPPrivateKey mPrivateKey;
+    // Active query text for mSearchView.
+    private String mSearchFilter;
     // View reference.
     private SearchView mSearchView;
     // List of most recent secrets retrieved from the api.
     private ArrayList<Secret> mSecrets;
+    // API for getting a secret.
+    private SecretApi mSecretApi;
     // ListView adapter reference.
     private SecretsAdapter mSecretsAdapter;
+    // API for getting secrets index.
+    private SecretsApi mSecretsApi;
+    // Indicates if a popup for a secret is visible.
+    private boolean mShowingPopupMenu = false;
     // Storage reference.
     private StorageHelper mStorageHelper;
     // Layout reference.
     private SwipeRefreshLayout mSwipeRefreshLayout;
     // Time in seconds since the key was unlocked.
     private int mTimeActivated = -1;
-    // TODO: DOCUMENT
-    private SecretDialogHelper mSecretDialogHelper;
-    private int mCurrentSecretPosition = -1;
-    private int mCurrentSecretDialog = -1;
-    private String mCurrentSecretPassword = null;
-    // TODO: DOCUMENT
-    private int mSecretAction = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
-
         super.onCreate(savedInstanceState);
+
+        Log.d(TAG, "onCreate");
 
         // Load content from XML resource.
         setContentView(R.layout.activity_secrets);
@@ -107,9 +108,6 @@ public class SecretsActivity extends AppCompatActivity implements
 
         // Instantiate custom storage interface.
         mStorageHelper = new StorageHelper(this);
-        mSecretDialogHelper = new SecretDialogHelper(this);
-
-        initApis();
 
         if (!TextUtils.isEmpty(getIntent().getStringExtra("mPassphrase"))) {
             // Get passphrase from previous activity.
@@ -122,29 +120,22 @@ public class SecretsActivity extends AppCompatActivity implements
             mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
         }
 
-        setUpListView();
-
-        setUpRefreshLayout();
-
-        loadInitialSecrets();
-    }
-
-    private void initApis() {
-        mSecretsApi = new SecretsApi(this, this);
+        // API references, set this activity as response callback.
         mSecretApi = new SecretApi(this, this);
-    }
+        mSecretsApi = new SecretsApi(this, this);
 
-    private void setUpListView() {
+        // Set up list view ..
         mListView = (ListView) findViewById(R.id.list_view_secrets);
         mSecretsAdapter = new SecretsAdapter(this);
         mListView.setAdapter(mSecretsAdapter);
         mListView.setFastScrollEnabled(true);  // FIXME: Can't fast scroll without triggering swipe-to-refresh.
-    }
 
-    private void setUpRefreshLayout() {
+        // .. and the wrapping swipe layout.
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_secrets);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
+
+        loadInitialSecrets();
     }
 
     private void loadInitialSecrets() {
@@ -159,7 +150,7 @@ public class SecretsActivity extends AppCompatActivity implements
                 }
             });
         } else {
-            // Resume with a list of secrets from the bundle. Since mCurFilter is still empty,
+            // Resume with a list of secrets from the bundle. Since mSearchFilter is still empty,
             // all secrets will be visible.
 
             // Use restart instead of init to force-create a new loader, which in turn creates a
@@ -178,14 +169,15 @@ public class SecretsActivity extends AppCompatActivity implements
         outState.putParcelableArrayList("mSecrets", mSecrets);
 
         // Remember current search filter.
-        outState.putString("mCurFilter", mCurFilter);
+        outState.putString("mSearchFilter", mSearchFilter);
 
         // Save list state (e.g. scrolling position).
         mListViewState = mListView.onSaveInstanceState();
         outState.putParcelable("mListViewState", mListViewState);
 
         // Remember if a popup was visible.
-        outState.putInt("mPopupMenuViewPosition", mPopupMenuViewPosition);
+        outState.putInt("mCurrentSecretPosition", mCurrentSecretPosition);
+        outState.putBoolean("mShowingPopupMenu", mShowingPopupMenu);
         if (mPopupMenu != null) {
             // Close it to prevent leaking it.
             mPopupMenu.dismiss();
@@ -193,18 +185,6 @@ public class SecretsActivity extends AppCompatActivity implements
 
         // Remember passphrase to be able to unlock the secret key on resume.
         outState.putString("mPassphrase", mPassphrase);
-
-        if (mSecretDialogHelper.isShowing()) {
-            if (mCurrentSecretPosition >= 0) {
-                mCurrentSecretDialog = mCurrentSecretPosition;
-            }
-        } else {
-            mCurrentSecretDialog = -1;
-            mCurrentSecretPassword = null;
-        }
-
-        outState.putInt("mCurrentSecretDialog", mCurrentSecretDialog);
-        outState.putString("mCurrentSecretPassword", mCurrentSecretPassword);
 
         // Reset timeout to avoid being locked out after a screen rotate.
         mTimeActivated = (int) (Calendar.getInstance().getTimeInMillis() / 1000L);
@@ -214,24 +194,18 @@ public class SecretsActivity extends AppCompatActivity implements
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        Log.d(TAG, "onRestoreInstanceState");
-
         super.onRestoreInstanceState(savedInstanceState);
+
+        Log.d(TAG, "onRestoreInstanceState");
 
         // Simply restore everything saved in onSaveInstanceState.
         mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
-        mCurFilter = savedInstanceState.getString("mCurFilter");
+        mSearchFilter = savedInstanceState.getString("mSearchFilter");
         mListViewState = savedInstanceState.getParcelable("mListViewState");
-        mPopupMenuViewPosition = savedInstanceState.getInt("mPopupMenuViewPosition");
-        if (mPopupMenuViewPosition != NO_POPUP) {
-            // Restore position to be able to get the secret after clicking the PopupMenu.
-            mCurrentSecretPosition = mPopupMenuViewPosition;
-        }
+        mCurrentSecretPosition = savedInstanceState.getInt("mCurrentSecretPosition");
+        mShowingPopupMenu = savedInstanceState.getBoolean("mShowingPopupMenu");
         mPassphrase = savedInstanceState.getString("mPassphrase");
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
-
-        mCurrentSecretDialog = savedInstanceState.getInt("mCurrentSecretDialog");
-        mCurrentSecretPassword = savedInstanceState.getString("mCurrentSecretPassword");
     }
 
     @Override
@@ -247,8 +221,6 @@ public class SecretsActivity extends AppCompatActivity implements
 
         Log.i(TAG, "onStop");
 
-        mSecretDialogHelper.closeSecretDialog();
-
         // FIXME: Stop ongoing http requests when activity stops.
 //        if (mApi != null) {
 //            mApi.cancelAll();
@@ -261,17 +233,10 @@ public class SecretsActivity extends AppCompatActivity implements
 
         Log.i(TAG, "onResume");
 
-        if (mCurrentSecretDialog >= 0 && mCurrentSecretPassword != null) {
-            Secret secret = mSecrets.get(mCurrentSecretDialog);
-            mSecretDialogHelper.showSecretDialog(secret, mCurrentSecretPassword);
-        }
-
         // Check if the key was unlocked more than TIMEOUT_AFTER seconds ago.
         boolean expired = testTimeoutIsExpired();
         if (expired) {
             Log.d(TAG, "Timeout expired, finish activity");
-
-            mPassphrase = null;  // TODO: Find out if this is really necessary.
 
             // Close activity, returning to the UnlockActivity.
             startActivity(new Intent(this, UnlockActivity.class));
@@ -281,7 +246,7 @@ public class SecretsActivity extends AppCompatActivity implements
 
             // Get private key from storage.
             mPrivateKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
-            Log.d(TAG, "Unlocked key: " + Long.toHexString(mPrivateKey.getKeyID()));
+            Log.d(TAG, "Unlocked key ID: " + Long.toHexString(mPrivateKey.getKeyID()).toUpperCase());
         }
 
     }
@@ -302,9 +267,9 @@ public class SecretsActivity extends AppCompatActivity implements
 //        mSearchView.setIconifiedByDefault(true);
 
         // Restore search filter.
-        if (mCurFilter != null) {
-            mSearchView.setQuery(mCurFilter, false);
-            if (TextUtils.isEmpty(mCurFilter)) {
+        if (mSearchFilter != null) {
+            mSearchView.setQuery(mSearchFilter, false);
+            if (TextUtils.isEmpty(mSearchFilter)) {
                 mSearchView.setIconified(true);
             } else {
 //                mSearchView.setIconified(false);
@@ -374,22 +339,25 @@ public class SecretsActivity extends AppCompatActivity implements
         return updateFilterAndRestartLoader(newText);
     }
 
+    /**
+     * Filter the list of secret when the current search filter has changed.
+     */
     private boolean updateFilterAndRestartLoader(String filterText) {
         // Called when the action bar search text has changed. Update
         // the search filter, and restart the loader to do a new query
         // with this filter.
         String newFilter = !TextUtils.isEmpty(filterText) ? filterText : null;
 
-        // Don't do anything if the filter hasn't actually changed.
         // Prevents restarting the loader when restoring state.
-        if (mCurFilter == null && newFilter == null) {
+        if (mSearchFilter == null && newFilter == null) {
             return true;
         }
-        if (mCurFilter != null && mCurFilter.equals(newFilter)) {
+        // Don't do anything if the filter hasn't actually changed.
+        if (mSearchFilter != null && mSearchFilter.equals(newFilter)) {
             return true;
         }
 
-        mCurFilter = newFilter;
+        mSearchFilter = newFilter;
         getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
 
         return true;
@@ -411,7 +379,7 @@ public class SecretsActivity extends AppCompatActivity implements
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
                 // FIXME: Looks like the first item is missing after search and clearing filter.
-                return new SecretsTaskLoader(this, mCurFilter, mSecrets);
+                return new SecretsTaskLoader(this, mSearchFilter, mSecrets);
         }
 
         return null;
@@ -454,9 +422,11 @@ public class SecretsActivity extends AppCompatActivity implements
             mListView.post(new Runnable() {
                 @Override
                 public void run() {
-                    // Restore the PopupMenu after the list is restored to it's previous state.
-                    if (mPopupMenuViewPosition != NO_POPUP) {
+                    // Restore the ListView to a position any dialog or popup was visible for.
+                    if (mShowingPopupMenu) {
                         mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                            private int timesScrolled = 0;
+
                             @Override
                             public void onScrollStateChanged(AbsListView view, int scrollState) {
 
@@ -466,14 +436,16 @@ public class SecretsActivity extends AppCompatActivity implements
                             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
                                 // Calling onRestoreInstanceState will trigger onScroll twice:
                                 // once when the items are loaded and again after the position is
-                                // restored. Show the popup after the second action happens. Of
-                                // course, depending on the position the popup might be in on
-                                // the first case happens if position < visibleItemCount, but it
-                                // won't be a problem then.
-                                if (mPopupMenuViewPosition >= firstVisibleItem && mPopupMenuViewPosition < firstVisibleItem + visibleItemCount) {
-                                    showPopup(mPopupMenuViewPosition);
-                                    // Don't do this again! At least until the next config change.
-                                    mListView.setOnScrollListener(null);
+                                // restored. Show the popup after the second action happens and make
+                                // sure the position is actually on screen (it might not show with
+                                // a lower visibleItemCount).
+                                timesScrolled++;
+                                if (timesScrolled > 1) {
+                                    if (mCurrentSecretPosition >= firstVisibleItem && mCurrentSecretPosition < firstVisibleItem + visibleItemCount) {
+                                        showPopup();
+                                        // Don't do this again! At least until the next config change.
+                                        mListView.setOnScrollListener(null);
+                                    }
                                 }
                             }
                         });
@@ -482,6 +454,12 @@ public class SecretsActivity extends AppCompatActivity implements
                     mListView.requestFocus();
                     mListView.onRestoreInstanceState(mListViewState);
                     mListViewState = null;
+
+                    // Make sure mPopupMenuPosition is actually on screen and not rendered
+                    // just below the current viewport.
+                    if (mCurrentSecretPosition > mListView.getLastVisiblePosition()) {
+                        mListView.setSelection(mCurrentSecretPosition);
+                    }
                 }
             });
         }
@@ -497,7 +475,9 @@ public class SecretsActivity extends AppCompatActivity implements
         mSecretsAdapter.swapCursor(null);
     }
 
-    /** Tests if it has been TIMEOUT_AFTER seconds since the private key was unlocked. **/
+    /**
+     * Tests if it has been TIMEOUT_AFTER seconds since the private key was unlocked.
+     */
     private boolean testTimeoutIsExpired() {
         int timeActive = ((int) (Calendar.getInstance().getTimeInMillis() / 1000L)) - mTimeActivated;
         Log.d(TAG, "Active for: " + Integer.toString(timeActive) + " seconds");
@@ -505,34 +485,17 @@ public class SecretsActivity extends AppCompatActivity implements
         return (mPassphrase == null || timeActive > TIMEOUT_AFTER);
     }
 
-    /** Shows the PopupMenu for the view at position @popupMenuViewPosition in the ListView. **/
-    private void showPopup(int popupMenuViewPosition) {
-        Log.d(TAG, "showPopup: " + popupMenuViewPosition);
-        mPopupMenuViewPosition = popupMenuViewPosition;
-
+    /**
+     * Shows the PopupMenu for the view at position @mCurrentSecretPosition in the ListView.
+     */
+    private void showPopup() {
         if (mListView == null) {
             return;
         }
 
-        // Re-use active view or create one using the adapter.
-        View view;
-        int firstListItemPosition = mListView.getFirstVisiblePosition();
-        int lastListItemPosition = firstListItemPosition + mListView.getChildCount() - 1;
-
-        if (popupMenuViewPosition < firstListItemPosition || popupMenuViewPosition > lastListItemPosition) {
-            // Get the View for the not yet rendered position @popupMenuViewPosition.
-            // NOTE: This should not happen with the delay showPopup is called after restoring
-            // mListViewState.
-            Log.d(TAG, "getView()");
-
-            view = mListView.getAdapter().getView(popupMenuViewPosition, null, mListView);
-        } else {
-            // Get the already available View for position @popupMenuViewPosition.
-            Log.d(TAG, "getChildAt()");
-
-            int childIndex = popupMenuViewPosition - firstListItemPosition;
-            view = mListView.getChildAt(childIndex);
-        }
+        // Get the already available View for position @popupMenuViewPosition.
+        int childIndex = mCurrentSecretPosition - mListView.getFirstVisiblePosition();
+        View view = mListView.getChildAt(childIndex);
 
         // Get the View to anchor the PopupMenu to from the ViewHolder.
         SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) view.getTag();
@@ -550,13 +513,16 @@ public class SecretsActivity extends AppCompatActivity implements
                 Log.d(TAG, "mPopMenu dismissed");
 
                 mPopupMenu = null;
-                mPopupMenuViewPosition = NO_POPUP;
+                mShowingPopupMenu = false;
+                // Cannot reset @mCurrentSecretPosition because clicking an item or clicking
+                // outside the popup to close it will both touch this listener.
             }
         });
 
         // Check for finishing state in case the timeout expired.
         if (!isFinishing()) {
             // Show menu.
+            mShowingPopupMenu = true;
             mPopupMenu.show();
 
             // Re-position immediately so it is positioned on top of anchorView (PopupMenu has no
@@ -568,34 +534,47 @@ public class SecretsActivity extends AppCompatActivity implements
         }
     }
 
-    /** Do something when clicking on different parts of a single list item. **/
+    /**
+     * Do something when clicking on different parts of a single list item.
+     */
     @Override
     public void onClick(View view) {
+        // Remember what secret was clicked on.
         mCurrentSecretPosition = (int) view.getTag();
 
         switch(view.getId()) {
             case R.id.item_secret:
-                // Show a Dialog with credentials.
-                mSecretAction = R.id.action_show_secret;
+                // Show a dialog with credentials when clicking on the item itself.
+                mCurrentSecretAction = R.id.action_show_secret;
                 Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
                 mSecretApi.getSecret(secret.getPath(), secret.getUsername());
                 break;
             case R.id.item_secret_actions:
-                // Show a PopupMenu with possible actions for the secret clicked on.
-                showPopup(mCurrentSecretPosition);
+                // Show a popup with next actions.
+                showPopup();
                 break;
         }
     }
 
+    /**
+     * Process a successful response for a single secret.
+     */
     @Override
-    public void onSecretApiResponse(String pgpResponse) {
+    public void onSecretApiSuccess(String pgpResponse) {
+        Log.d(TAG, "onSecretApiSuccess for " + mCurrentSecretPosition);
         Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
 
-        String plaintext = PgpHelper.decrypt(mPrivateKey, pgpResponse);
-        handlePasswordActions(secret, plaintext);
+        String secretText = PgpHelper.decrypt(mPrivateKey, pgpResponse);
+        if (secretText == null) {
+            String errorMessage = getString(R.string.volley_decrypt_response_error_message);
+            onSecretApiFailure(errorMessage);
+        } else {
+            handleSecretActions(secret, secretText);
+        }
 
-        // Reset action.
-        mSecretAction = -1;
+        // Reset temporary variables.
+        mCurrentSecretAction = -1;
+        mCurrentSecretPosition = NO_ACTIVE_SECRET;
     }
 
     @Override
@@ -603,16 +582,29 @@ public class SecretsActivity extends AppCompatActivity implements
         Toast.makeText(getApplicationContext(),
                 errorMessage, Toast.LENGTH_LONG)
                 .show();
+
+        // Reset temporary variables.
+        mCurrentSecretAction = -1;
+        mCurrentSecretPosition = NO_ACTIVE_SECRET;
     }
 
+    /**
+     * Process a successful response for the full secrets list.
+     */
     @Override
-    public void onSecretsApiResponse(String pgpResponse) {
-        try {
-            JSONArray secretsJsonArray = new JSONArray(PgpHelper.decrypt(mPrivateKey, pgpResponse));
-            mSecrets = Secret.fromJson(secretsJsonArray);
-            getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
-        } catch (JSONException e) {
-            e.printStackTrace();
+    public void onSecretsApiSuccess(String pgpResponse) {
+        String secretText = PgpHelper.decrypt(mPrivateKey, pgpResponse);
+        if (secretText == null) {
+            String errorMessage = "Failed to decrypt response";
+            onSecretsApiFailure(errorMessage);
+        } else {
+            try {
+                JSONArray secretsJsonArray = new JSONArray(secretText);
+                mSecrets = Secret.fromJson(secretsJsonArray);
+                getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -625,11 +617,14 @@ public class SecretsActivity extends AppCompatActivity implements
                 .show();
     }
 
+    /**
+     * Show a popup or dialog depending on what is clicked on in the list.
+     */
     @Override
     public boolean onMenuItemClick(MenuItem item) {
-        mSecretAction = item.getItemId();
+        mCurrentSecretAction = item.getItemId();
         Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
-        switch (mSecretAction) {
+        switch (mCurrentSecretAction) {
             case R.id.action_copy_secret_password:
                 mSecretApi.getSecret(secret.getPath(), secret.getUsername());
                 break;
@@ -637,17 +632,25 @@ public class SecretsActivity extends AppCompatActivity implements
                 mSecretApi.getSecret(secret.getPath(), secret.getUsername());
                 break;
             default:
-                handleNonPasswordActions(secret);
+                handleNonSecretActions(secret);
+
+                // Reset temporary variables.
+                mCurrentSecretAction = -1;
+                mCurrentSecretPosition = NO_ACTIVE_SECRET;
         }
 
         return true;
     }
 
-    private void handlePasswordActions(Secret secret, String password) {
-        switch (mSecretAction) {
+    /**
+     * Process popup actions that involve fetching the secret first.
+     */
+    private void handleSecretActions(Secret secret, String secretText) {
+        switch (mCurrentSecretAction) {
             case R.id.action_copy_secret_password:
-                if (password != null) {
-                    ClipboardHelper.copy(getApplicationContext(), password);
+                if (secretText != null) {
+                    secret.setSecretText(secretText);
+                    ClipboardHelper.copy(getApplicationContext(), secret.getPassphrase());
                     Toast.makeText(getApplicationContext(),
                             getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
                             .show();
@@ -658,22 +661,24 @@ public class SecretsActivity extends AppCompatActivity implements
                 }
                 break;
             case R.id.action_show_secret:
-                if (password != null) {
-                    // Show a Dialog with credentials.
-                    mCurrentSecretPassword = password;
-                    mSecretDialogHelper.showSecretDialog(secret, password);
+                if (secretText != null) {
+                    // Show a dialog.
+                    SecretFragment fragment = SecretFragment.newInstance(secret, secretText);
+                    fragment.show(getSupportFragmentManager(), "" + SECRET_DIALOG_TAG);
                 } else {
-                    // TODO: different error string
                     Toast.makeText(getApplicationContext(),
-                            getString(R.string.toast_copy_secret_password_error), Toast.LENGTH_SHORT)
+                            getString(R.string.toast_show_secret_dialog_error), Toast.LENGTH_SHORT)
                             .show();
                 }
                 break;
         }
     }
 
-    private void handleNonPasswordActions(Secret secret) {
-        switch (mSecretAction) {
+    /**
+     * Process popup actions that don't require fetching the secret at all.
+     */
+    private void handleNonSecretActions(Secret secret) {
+        switch (mCurrentSecretAction) {
             case R.id.action_copy_secret_username:
                 ClipboardHelper.copy(getApplicationContext(), secret.getUsername());
                 Toast.makeText(getApplicationContext(),

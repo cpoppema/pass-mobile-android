@@ -37,6 +37,10 @@ public class Secret implements Parcelable {
     private String mUsername;
     private String mUsernameNormalized;
 
+    // These are used as instance variables only and are not parcelable.
+    private String mSecretText;
+    private String mPassphrase;
+
     public Secret(JSONObject object) {
         try {
             mDomain = object.getString(DOMAIN);
@@ -134,5 +138,26 @@ public class Secret implements Parcelable {
     public boolean isMatch(String needle) {
         return TextUtils.isEmpty(needle) || fuzzyContains(getDomain(), needle) ||
                 fuzzyContains(getUsername(), needle) || fuzzyContains(getUsernameNormalized(), needle);
+    }
+
+    /**
+     * Set the full contents of a secret, doing this allows for setting the passphrase "parsing"
+     * in this class in a centralized place.
+     * @param secretText
+     */
+    public void setSecretText(String secretText) {
+        mSecretText = secretText;
+    }
+
+    public String getSecretText() {
+        return mSecretText;
+    }
+
+    public String getPassphrase() {
+        if (mPassphrase == null ) {
+            // Read the first line as the password.
+            mPassphrase = getSecretText().split("\n")[0];
+        }
+        return mPassphrase;
     }
 }

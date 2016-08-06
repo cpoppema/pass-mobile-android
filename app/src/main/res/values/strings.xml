@@ -2,6 +2,7 @@
     <!-- App/MainActivity's title -->
     <string name="app_name">Pass</string>
 
+    <!-- MainActivity/UnlockActivity -->
     <string name="dialog_settings_title">No configuration found</string>
     <string name="dialog_settings_message">To get started, open settings, configure your remote server and generate a key!</string>
     <string name="dialog_settings_button">OPEN SETTINGS</string>
@@ -40,15 +41,10 @@
     <!-- UnlockFragment -->
     <string name="fragment_unlock_title">Passphrase</string>
     <string name="fragment_unlock_invalid_passphrase">Invalid passphrase</string>
-    <string name="fragment_unlock_button">UNLOCK</string>
+    <string name="fragment_unlock_action_unlock">UNLOCK</string>
 
     <!-- Menu item title to open SettingsActivity -->
     <string name="menu_settings">Settings</string>
-
-    <!-- Passphrase dialog -->
-    <string name="fragment_unlock_action_unlock">UNLOCK</string>
-    <string name="unlock_invalid">Invalid passphrase</string>
-    <string name="unlock_title">Passphrase</string>
 
     <!-- SecretsActivity -->
     <string name="title_activity_secrets">Secrets</string>
@@ -63,6 +59,20 @@
     <string name="toast_copy_secret_password_error">Unable to copy password..</string>
     <string name="toast_copy_secret_username">Username copied!</string>
     <string name="toast_copy_secret_website">Website copied!</string>
+    <string name="toast_show_secret_dialog_error">Unable to show dialog..</string>
+
+    <string name="volley_decrypt_response_error_message">Failed to decrypt response</string>
+    <string name="volley_timeout_error_message">Oops... Server timed out</string>
+    <string name="volley_no_connection_error_message">Oops... No network connection</string>
+    <string name="volley_auth_failure_error_message">Oops... Public key denied</string>
+    <string name="volley_server_error_message">Oops... Server down</string>
+    <string name="volley_network_error_message">Oops... Network problem</string>
+    <string name="volley_parse_error_message">Oops... Invalid server response</string>
+    <string name="volley_generic_error_message">Oops... Something went wrong</string>
+
+    <!-- SecretFragment -->
+    <string name="secret_dialog_button_copy">COPY</string>
+    <string name="secret_dialog_button_ok">OK</string>
 
     <!-- CreateKeyActivity -->
     <string name="prompt_key_name">Key name</string>
@@ -72,15 +82,4 @@
     <string name="error_field_required">This field is required</string>
 
     <string name="progress_generating_key">Generating key</string>
-
-    <string name="dialog_button_copy">COPY</string>
-    <string name="dialog_button_ok">OK</string>
-
-    <string name="volley_timeout_error_message">Oops... Server timed out</string>
-    <string name="volley_no_connection_error_message">Oops... No network connection</string>
-    <string name="volley_auth_failure_error_message">Oops... Public key denied</string>
-    <string name="volley_server_error_message">Oops... Server down</string>
-    <string name="volley_network_error_message">Oops... Network problem</string>
-    <string name="volley_parse_error_message">Oops... Invalid server response</string>
-    <string name="volley_generic_error_message">Oops... something went wrong</string>
 </resources>
