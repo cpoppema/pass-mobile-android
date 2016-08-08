@@ -135,17 +135,23 @@ public class SecretsActivity extends AppCompatActivity implements
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
 
-        loadInitialSecrets();
+        if (savedInstanceState == null) {
+            // Only do the initial network request if it is certain there is not saved state.
+            showOrFetchSecrets();
+        }
     }
 
-    private void loadInitialSecrets() {
+    private void showOrFetchSecrets() {
+        Log.d(TAG, "showOrFetchSecrets");
         if (mSecrets == null) {
             // Initial load.
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
                     // Get list of secrets from server.
-                    mSwipeRefreshLayout.setRefreshing(true);
+                    if (!mSwipeRefreshLayout.isRefreshing()) {
+                        mSwipeRefreshLayout.setRefreshing(true);
+                    }
                     mSecretsApi.getSecrets();
                 }
             });
@@ -206,6 +212,9 @@ public class SecretsActivity extends AppCompatActivity implements
         mShowingPopupMenu = savedInstanceState.getBoolean("mShowingPopupMenu");
         mPassphrase = savedInstanceState.getString("mPassphrase");
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
+
+        // Do this in onRestoreInstanceState most of the time to prevent network requests.
+        showOrFetchSecrets();
     }
 
     @Override
@@ -221,10 +230,14 @@ public class SecretsActivity extends AppCompatActivity implements
 
         Log.i(TAG, "onStop");
 
-        // FIXME: Stop ongoing http requests when activity stops.
-//        if (mApi != null) {
-//            mApi.cancelAll();
-//        }
+        // Stop any queued http requests/make sure response listeners are not called for ongoing
+        // requests.
+        if (mSecretApi != null) {
+            mSecretApi.cancelAll();
+        }
+        if (mSecretsApi != null) {
+            mSecretsApi.cancelAll();
+        }
     }
 
     @Override
@@ -247,6 +260,11 @@ public class SecretsActivity extends AppCompatActivity implements
             // Get private key from storage.
             mPrivateKey = PgpHelper.extractPrivateKey(mStorageHelper.getPrivateKey(), mPassphrase);
             Log.d(TAG, "Unlocked key ID: " + Long.toHexString(mPrivateKey.getKeyID()).toUpperCase());
+
+            // Requests were canceled, but we never got anything yet.
+            if (mSwipeRefreshLayout.isRefreshing()) {
+                showOrFetchSecrets();
+            }
         }
 
     }
@@ -378,7 +396,6 @@ public class SecretsActivity extends AppCompatActivity implements
                 return new SecretsTaskLoader(this);
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
-                // FIXME: Looks like the first item is missing after search and clearing filter.
                 return new SecretsTaskLoader(this, mSearchFilter, mSecrets);
         }
 
@@ -593,6 +610,8 @@ public class SecretsActivity extends AppCompatActivity implements
      */
     @Override
     public void onSecretsApiSuccess(String pgpResponse) {
+        Log.d(TAG, "onSecretsApiSuccess");
+
         String secretText = PgpHelper.decrypt(mPrivateKey, pgpResponse);
         if (secretText == null) {
             String errorMessage = "Failed to decrypt response";

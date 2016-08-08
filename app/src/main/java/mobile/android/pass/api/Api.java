@@ -1,6 +1,7 @@
 package mobile.android.pass.api;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -23,17 +24,18 @@ import mobile.android.pass.utils.StorageHelper;
  * Superclass with basic Api functions.
  */
 public abstract class Api {
-    // Endpoints.
+    public static final String DEFAULT_KEY = "publicKey";
     public static final String SECRETS_ENDPOINT = "/secrets/";
     public static final String SECRET_ENDPOINT = "/secret/";
 
-    public static final String DEFAULT_KEY = "publicKey";
+    private static final String TAG = Api.class.toString();
 
     private Context mContext;
 
     protected final String mResponseKey = "response";
     protected RequestQueue mRequestQueue;
     protected StorageHelper mStorageHelper;
+    protected String mTag;
 
 
     public Api(Context context) {
@@ -66,5 +68,10 @@ public abstract class Api {
             return mContext.getString(R.string.volley_parse_error_message);
         }
         return mContext.getString(R.string.volley_generic_error_message);
+    }
+
+    public void cancelAll() {
+        Log.d(TAG, "Canceling ongoing/queue requests.");
+        mRequestQueue.cancelAll(mTag);
     }
 }

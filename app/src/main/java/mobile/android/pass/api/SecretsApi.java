@@ -19,6 +19,7 @@ public class SecretsApi extends Api implements Response.Listener<JSONObject>, Re
     public SecretsApi(Context context, SecretsCallback callback) {
         super(context);
         mCallback = callback;
+        mTag = SecretsApi.class.toString();
     }
 
     public void getSecrets() {
@@ -35,6 +36,7 @@ public class SecretsApi extends Api implements Response.Listener<JSONObject>, Re
             }
         };
 
+        request.setTag(mTag);
         mRequestQueue.add(request);
     }
 
