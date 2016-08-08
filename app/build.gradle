@@ -27,5 +27,9 @@ dependencies {
     compile 'com.android.support:design:23.4.0'
     compile 'com.android.support:support-v4:23.4.0'
 
+    // Android official http lib
     compile 'com.android.volley:volley:1.0.0'
+
+    // Spongy Castle
+    compile 'com.madgag.spongycastle:pg:1.54.0.0'
 }
