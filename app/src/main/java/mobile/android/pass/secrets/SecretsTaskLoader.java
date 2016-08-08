@@ -21,13 +21,15 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
     // List of secrets before a filter is applied.
     private ArrayList<Secret> mOriginalSecrets;
 
-    /** Constructor used when fetching the most recent list of remote secrets. **/
-    public SecretsTaskLoader(Context context) {
+    /** Constructor used when building a clean list of given secrets. **/
+    public SecretsTaskLoader(Context context, ArrayList<Secret> secrets) {
         super(context);
+
+        mOriginalSecrets = secrets;
     }
 
     /** Constructor used when applying (or resetting) a filter to a local set of secrets. **/
-    public SecretsTaskLoader(Context context, String filter, ArrayList<Secret> secrets) {
+    public SecretsTaskLoader(Context context, ArrayList<Secret> secrets, String filter) {
         super(context);
 
         mFilter = filter;
@@ -53,7 +55,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
                     Secret secret = secrets.get(i);
 
                     // Apply filtering.
-                    if (secret.isMatch(mFilter)) {
+                    if (mFilter == null || secret.isMatch(mFilter)) {
                         // Add to cursor.
                         MatrixCursor.RowBuilder builder = cursor.newRow();
                         builder.add(BaseColumns._ID, id++);

@@ -45,7 +45,7 @@ import mobile.android.pass.utils.StorageHelper;
 public class SecretsActivity extends AppCompatActivity implements
         SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener,
         LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener, SecretsCallback,
-        SecretCallback,  PopupMenu.OnMenuItemClickListener {
+        SecretCallback, PopupMenu.OnMenuItemClickListener {
     private static final String TAG = SecretsActivity.class.toString();
     // Indicates the dialog displaying a secret.
     private static int SECRET_DIALOG_TAG = 0;
@@ -136,32 +136,14 @@ public class SecretsActivity extends AppCompatActivity implements
         mSwipeRefreshLayout.setOnRefreshListener(this);
 
         if (savedInstanceState == null) {
-            // Only do the initial network request if it is certain there is not saved state.
-            showOrFetchSecrets();
-        }
-    }
-
-    private void showOrFetchSecrets() {
-        Log.d(TAG, "showOrFetchSecrets");
-        if (mSecrets == null) {
-            // Initial load.
+            // Start loading when the UI is ready to display a busy indicator.
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
-                    // Get list of secrets from server.
-                    if (!mSwipeRefreshLayout.isRefreshing()) {
-                        mSwipeRefreshLayout.setRefreshing(true);
-                    }
-                    mSecretsApi.getSecrets();
+                    // Only do the initial network request if it is certain there is not a saved state.
+                    getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
                 }
             });
-        } else {
-            // Resume with a list of secrets from the bundle. Since mSearchFilter is still empty,
-            // all secrets will be visible.
-
-            // Use restart instead of init to force-create a new loader, which in turn creates a
-            // new SecretsTaskLoader with the latest mSecrets as its mOriginalSecrets.
-            getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
         }
     }
 
@@ -214,7 +196,7 @@ public class SecretsActivity extends AppCompatActivity implements
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
 
         // Do this in onRestoreInstanceState most of the time to prevent network requests.
-        showOrFetchSecrets();
+        getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
     }
 
     @Override
@@ -262,8 +244,9 @@ public class SecretsActivity extends AppCompatActivity implements
             Log.d(TAG, "Unlocked key ID: " + Long.toHexString(mPrivateKey.getKeyID()).toUpperCase());
 
             // Requests were canceled, but we never got anything yet.
-            if (mSwipeRefreshLayout.isRefreshing()) {
-                showOrFetchSecrets();
+            if (mSwipeRefreshLayout.isRefreshing() && mSecrets == null) {
+                Log.d(TAG, "Resuming, but layout was still refreshing, issue new refresh task loader");
+                getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
             }
         }
 
@@ -282,18 +265,15 @@ public class SecretsActivity extends AppCompatActivity implements
         mSearchView = (SearchView) MenuItemCompat.getActionView(item);
         mSearchView.setOnQueryTextListener(this);
         mSearchView.setSubmitButtonEnabled(false);
-//        mSearchView.setIconifiedByDefault(true);
+        mSearchView.setIconifiedByDefault(true);
 
         // Restore search filter.
         if (mSearchFilter != null) {
             mSearchView.setQuery(mSearchFilter, false);
-            if (TextUtils.isEmpty(mSearchFilter)) {
-                mSearchView.setIconified(true);
-            } else {
-//                mSearchView.setIconified(false);
+            if (!TextUtils.isEmpty(mSearchFilter)) {
+                mSearchView.setIconified(false);
+                mSearchView.clearFocus();
             }
-        } else {
-            mSearchView.setIconified(true);
         }
 
         return true;
@@ -328,8 +308,9 @@ public class SecretsActivity extends AppCompatActivity implements
             mSearchView.setIconified(true);
         }
 
-        mSwipeRefreshLayout.setRefreshing(true);
-        mSecretsApi.getSecrets();
+        // Reset mSecrets so that the loader will perform a network request.
+        mSecrets = null;
+        getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
     }
 
     /**
@@ -392,11 +373,21 @@ public class SecretsActivity extends AppCompatActivity implements
 
         switch (id) {
             case LOADER_ID_REFRESH:
-                // Fetch new set of secrets.
-                return new SecretsTaskLoader(this);
+                // Show unfiltered list of existing secrets or fetch a new set of secrets.
+                // Get list of secrets from server.
+                if (mSecrets == null) {
+                    // Disable search while fetching.
+                    if (mSearchView != null) {
+                        mSearchView.setEnabled(false);
+                    }
+                    // Start fetching.
+                    mSecretsApi.getSecrets();
+                }
+
+                return new SecretsTaskLoader(this, mSecrets);
             case LOADER_ID_FILTER:
                 // Filter from secrets in memory.
-                return new SecretsTaskLoader(this, mSearchFilter, mSecrets);
+                return new SecretsTaskLoader(this, mSecrets, mSearchFilter);
         }
 
         return null;
@@ -405,6 +396,15 @@ public class SecretsActivity extends AppCompatActivity implements
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         Log.d(TAG, "onLoadFinished: " + (loader.getId() == LOADER_ID_FILTER ? "LOADER_ID_FILTER" : "LOADER_ID_REFRESH"));
+
+        if (data == null) {
+            // Task was started, but never finished with a result set, most likely because an api
+            // call was started, so wait with doing anything until there is data.
+            Log.d(TAG, "onLoadFinished without data, return early");
+            return;
+        } else {
+            Log.d(TAG, "onLoadFinished with data");
+        }
 
         // Hide busy indicator and make the ListView visible again.
         mSwipeRefreshLayout.setRefreshing(false);
@@ -421,64 +421,68 @@ public class SecretsActivity extends AppCompatActivity implements
 
             // Keep track of all secrets to be able to filter them without having to retrieve them
             // again later.
-            if (data != null) {
-                data.moveToFirst();
-                while (data.moveToNext()) {
-                    Secret secret = new Secret(data);
-                    mSecrets.add(secret);
-                }
-                data.moveToFirst();
+            data.moveToFirst();
+            while (!data.isAfterLast()) {
+                Secret secret = new Secret(data);
+                mSecrets.add(secret);
+                data.moveToNext();
+            }
+            data.moveToFirst();
+        } else if (loader.getId() == LOADER_ID_FILTER) {
+            // Restore scrolling position in the ListView.
+            if (mListViewState != null) {
+                mListView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Restore the ListView to a position any dialog or popup was visible for.
+                        if (mShowingPopupMenu) {
+                            mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                                private int timesScrolled = 0;
+
+                                @Override
+                                public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+                                }
+
+                                @Override
+                                public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                                    // Calling onRestoreInstanceState will trigger onScroll twice:
+                                    // once when the items are loaded and again after the position is
+                                    // restored. Show the popup after the second action happens and make
+                                    // sure the position is actually on screen (it might not show with
+                                    // a lower visibleItemCount).
+                                    timesScrolled++;
+                                    if (timesScrolled > 1) {
+                                        if (mCurrentSecretPosition >= firstVisibleItem && mCurrentSecretPosition < firstVisibleItem + visibleItemCount) {
+                                            showPopup();
+                                            // Don't do this again! At least until the next config change.
+                                            mListView.setOnScrollListener(null);
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        mListView.requestFocus();
+                        mListView.onRestoreInstanceState(mListViewState);
+                        mListViewState = null;
+
+                        // Make sure mPopupMenuPosition is actually on screen and not rendered
+                        // just below the current viewport.
+                        if (mCurrentSecretPosition > mListView.getLastVisiblePosition()) {
+                            mListView.setSelection(mCurrentSecretPosition);
+                        }
+                    }
+                });
             }
         }
 
         // Swap the new cursor in.
         mSecretsAdapter.swapCursor(data);
 
-        // Restore scrolling position in the ListView.
-        if (mListViewState != null) {
-            mListView.post(new Runnable() {
-                @Override
-                public void run() {
-                    // Restore the ListView to a position any dialog or popup was visible for.
-                    if (mShowingPopupMenu) {
-                        mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
-                            private int timesScrolled = 0;
-
-                            @Override
-                            public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-                            }
-
-                            @Override
-                            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                                // Calling onRestoreInstanceState will trigger onScroll twice:
-                                // once when the items are loaded and again after the position is
-                                // restored. Show the popup after the second action happens and make
-                                // sure the position is actually on screen (it might not show with
-                                // a lower visibleItemCount).
-                                timesScrolled++;
-                                if (timesScrolled > 1) {
-                                    if (mCurrentSecretPosition >= firstVisibleItem && mCurrentSecretPosition < firstVisibleItem + visibleItemCount) {
-                                        showPopup();
-                                        // Don't do this again! At least until the next config change.
-                                        mListView.setOnScrollListener(null);
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    mListView.requestFocus();
-                    mListView.onRestoreInstanceState(mListViewState);
-                    mListViewState = null;
-
-                    // Make sure mPopupMenuPosition is actually on screen and not rendered
-                    // just below the current viewport.
-                    if (mCurrentSecretPosition > mListView.getLastVisiblePosition()) {
-                        mListView.setSelection(mCurrentSecretPosition);
-                    }
-                }
-            });
+        // Enable search after fetching/restoring.
+        if (mSearchView != null) {
+            mSearchView.setEnabled(true);
         }
     }
 
@@ -559,7 +563,7 @@ public class SecretsActivity extends AppCompatActivity implements
         // Remember what secret was clicked on.
         mCurrentSecretPosition = (int) view.getTag();
 
-        switch(view.getId()) {
+        switch (view.getId()) {
             case R.id.item_secret:
                 // Show a dialog with credentials when clicking on the item itself.
                 mCurrentSecretAction = R.id.action_show_secret;
@@ -596,6 +600,8 @@ public class SecretsActivity extends AppCompatActivity implements
 
     @Override
     public void onSecretApiFailure(String errorMessage) {
+        Log.d(TAG, "onSecretApiFailure");
+
         Toast.makeText(getApplicationContext(),
                 errorMessage, Toast.LENGTH_LONG)
                 .show();
@@ -614,26 +620,31 @@ public class SecretsActivity extends AppCompatActivity implements
 
         String secretText = PgpHelper.decrypt(mPrivateKey, pgpResponse);
         if (secretText == null) {
-            String errorMessage = "Failed to decrypt response";
+            String errorMessage = getString(R.string.volley_decrypt_response_error_message);
             onSecretsApiFailure(errorMessage);
         } else {
             try {
                 JSONArray secretsJsonArray = new JSONArray(secretText);
                 mSecrets = Secret.fromJson(secretsJsonArray);
-                getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
             } catch (JSONException e) {
                 e.printStackTrace();
+            }
+
+            if (mSecrets != null) {
+                getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
             }
         }
     }
 
     @Override
     public void onSecretsApiFailure(String errorMessage) {
-        mSwipeRefreshLayout.setRefreshing(false);
+        Log.d(TAG, "onSecretsApiFailure");
 
         Toast.makeText(getApplicationContext(),
                 errorMessage, Toast.LENGTH_LONG)
                 .show();
+
+        mSwipeRefreshLayout.setRefreshing(false);
     }
 
     /**
