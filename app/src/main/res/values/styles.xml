@@ -58,4 +58,12 @@
         <item name="android:textColor">@color/primary_text</item>
         <item name="android:textSize">16sp</item>
     </style>
+
+    <style name="AppTheme.ProgressDialogTextView"  parent="Theme.AppCompat.Light.Dialog">
+        <!-- Progress message color -->
+        <item name="android:textColor">@color/primary_text</item>
+
+        <!-- Progress spinner color -->
+        <item name="colorControlActivated">@color/accent</item>
+    </style>
 </resources>

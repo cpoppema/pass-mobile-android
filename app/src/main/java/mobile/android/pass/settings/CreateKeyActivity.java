@@ -188,7 +188,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     private void showProgress(final boolean show) {
         if (mProgressDialog == null) {
             // Setup the ProgressDialog for the first time.
-            mProgressDialog = new ProgressDialog(this);
+            mProgressDialog = new ProgressDialog(this, R.style.AppTheme_ProgressDialogTextView);
             mProgressDialog.setIndeterminate(true);
             mProgressDialog.setMessage(getString(R.string.progress_generating_key));
 
