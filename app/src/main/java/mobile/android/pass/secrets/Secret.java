@@ -112,9 +112,6 @@ public class Secret implements Parcelable {
 
     /**
      * Returns true if @needle was found in @hay using fuzzy matching.
-     * @param hay
-     * @param needle
-     * @return
      */
     private boolean fuzzyContains(String hay, String needle) {
         hay = hay.toLowerCase();
@@ -140,21 +137,20 @@ public class Secret implements Parcelable {
                 fuzzyContains(getUsername(), needle) || fuzzyContains(getUsernameNormalized(), needle);
     }
 
+    public String getSecretText() {
+        return mSecretText;
+    }
+
     /**
      * Set the full contents of a secret, doing this allows for setting the passphrase "parsing"
      * in this class in a centralized place.
-     * @param secretText
      */
     public void setSecretText(String secretText) {
         mSecretText = secretText;
     }
 
-    public String getSecretText() {
-        return mSecretText;
-    }
-
     public String getPassphrase() {
-        if (mPassphrase == null ) {
+        if (mPassphrase == null) {
             // Read the first line as the password.
             mPassphrase = getSecretText().split("\n")[0];
         }

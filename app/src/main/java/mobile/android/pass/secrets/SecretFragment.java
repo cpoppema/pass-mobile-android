@@ -71,13 +71,13 @@ public class SecretFragment extends DialogFragment {
                 .setTitle(getTitle())
                 .setNegativeButton(R.string.secret_dialog_button_ok, null)
                 .setPositiveButton(R.string.secret_dialog_button_copy, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            ClipboardHelper.copy(getContext().getApplicationContext(), mSecret.getPassphrase());
-                            Toast.makeText(getContext().getApplicationContext(),
-                                    getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
-                                    .show();
-                        }
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ClipboardHelper.copy(getContext().getApplicationContext(), mSecret.getPassphrase());
+                        Toast.makeText(getContext().getApplicationContext(),
+                                getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
+                                .show();
+                    }
                 });
 
 

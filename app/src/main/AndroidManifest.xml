@@ -10,8 +10,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity
-            android:name=".MainActivity">
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -19,13 +18,10 @@
             </intent-filter>
         </activity>
         <activity android:name=".unlock.UnlockActivity" />
-
         <activity android:name=".settings.CreateKeyActivity" />
         <activity android:name=".settings.PublicKeyActivity" />
         <activity android:name=".settings.SettingsActivity" />
-
         <activity android:name=".secrets.SecretsActivity" />
-
     </application>
 
 </manifest>

@@ -5,5 +5,6 @@ package mobile.android.pass.api;
  */
 public interface SecretCallback {
     void onSecretApiSuccess(String pgpResponse);
+
     void onSecretApiFailure(String errorMessage);
 }

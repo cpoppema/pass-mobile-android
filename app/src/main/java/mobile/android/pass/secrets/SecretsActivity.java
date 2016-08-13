@@ -135,12 +135,12 @@ public class SecretsActivity extends AppCompatActivity implements
         mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
         mSwipeRefreshLayout.setOnRefreshListener(this);
 
+        // Only do the initial network request if it is certain there is not a saved state.
         if (savedInstanceState == null) {
             // Start loading when the UI is ready to display a busy indicator.
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
-                    // Only do the initial network request if it is certain there is not a saved state.
                     getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
                 }
             });
@@ -196,7 +196,13 @@ public class SecretsActivity extends AppCompatActivity implements
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
 
         // Do this in onRestoreInstanceState most of the time to prevent network requests.
-        getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+        // Start loading when the UI is ready to display a busy indicator.
+        mSwipeRefreshLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
+            }
+        });
     }
 
     @Override
@@ -245,8 +251,13 @@ public class SecretsActivity extends AppCompatActivity implements
 
             // Requests were canceled, but we never got anything yet.
             if (mSwipeRefreshLayout.isRefreshing() && mSecrets == null) {
-                Log.d(TAG, "Resuming, but layout was still refreshing, issue new refresh task loader");
-                getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
+                mSwipeRefreshLayout.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG, "Resuming, but layout was still refreshing, issue new refresh task loader");
+                        getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
+                    }
+                });
             }
         }
 
@@ -298,18 +309,22 @@ public class SecretsActivity extends AppCompatActivity implements
     public void onRefresh() {
         Log.d(TAG, "onRefresh");
 
+        // Reset mSecrets so that the loader will perform a network request, but a reset of
+        // mSearchFilter won't finish up for LOADER_ID_FILTER in onLoadFinished.
+        mSecrets = null;
+
         // Drop filter.
         if (mSearchView != null) {
-            // Clear filter.
-            mSearchView.setQuery("", false);
+            if (!TextUtils.isEmpty(mSearchFilter)) {
+                // Clear filter.
+                mSearchView.setQuery("", false);
+            }
             // Hide keyboard.
             mSearchView.clearFocus();
             // Switch back to actionbar icon.
             mSearchView.setIconified(true);
         }
 
-        // Reset mSecrets so that the loader will perform a network request.
-        mSecrets = null;
         getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
     }
 
@@ -640,11 +655,11 @@ public class SecretsActivity extends AppCompatActivity implements
     public void onSecretsApiFailure(String errorMessage) {
         Log.d(TAG, "onSecretsApiFailure");
 
+        mSwipeRefreshLayout.setRefreshing(false);
+
         Toast.makeText(getApplicationContext(),
                 errorMessage, Toast.LENGTH_LONG)
                 .show();
-
-        mSwipeRefreshLayout.setRefreshing(false);
     }
 
     /**

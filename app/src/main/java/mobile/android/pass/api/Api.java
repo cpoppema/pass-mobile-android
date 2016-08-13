@@ -1,9 +1,5 @@
 package mobile.android.pass.api;
 
-import android.content.Context;
-import android.util.Log;
-import android.widget.Toast;
-
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkError;
 import com.android.volley.NoConnectionError;
@@ -17,6 +13,11 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Context;
+import android.util.Log;
+
+import javax.net.ssl.SSLException;
+
 import mobile.android.pass.R;
 import mobile.android.pass.utils.StorageHelper;
 
@@ -29,13 +30,11 @@ public abstract class Api {
     public static final String SECRET_ENDPOINT = "/secret/";
 
     private static final String TAG = Api.class.toString();
-
-    private Context mContext;
-
     protected final String mResponseKey = "response";
     protected RequestQueue mRequestQueue;
     protected StorageHelper mStorageHelper;
     protected String mTag;
+    private Context mContext;
 
 
     public Api(Context context) {
@@ -57,6 +56,17 @@ public abstract class Api {
         if (error instanceof TimeoutError) {
             return mContext.getString(R.string.volley_timeout_error_message);
         } else if (error instanceof NoConnectionError) {
+            // Seen on Android 7:
+            // When only TLS is accepted by the server, SSLv3 connections can result in
+            // "javax.net.ssl.SSLHandshakeException: Connection closed by peer."
+            if (error.getCause() instanceof SSLException) {
+                error.printStackTrace();
+
+                // Crude, but maybe more helpful.
+                Throwable cause = error.getCause();
+                return cause.getClass().getName() + ":\n" + cause.getMessage();
+            }
+
             return mContext.getString(R.string.volley_no_connection_error_message);
         } else if (error instanceof AuthFailureError) {
             return mContext.getString(R.string.volley_auth_failure_error_message);

@@ -4,8 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -26,12 +24,12 @@ import mobile.android.pass.utils.StorageHelper;
 public class SettingsActivity extends AppCompatActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener,
         View.OnClickListener {
-    private static final String TAG = SettingsActivity.class.toString();
-
     // Indicates there is no popup visible.
     public static final int NO_DIALOG_TAG = -1;
     // Indicates the server name dialog is visible.
     public static final int SERVER_NAME_DIALOG_TAG = 1;
+
+    private static final String TAG = SettingsActivity.class.toString();
 
     // Reference to preferences.
     private SharedPreferences mSharedPreferences;

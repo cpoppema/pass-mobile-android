@@ -53,7 +53,8 @@
                         android:paddingBottom="16dp">
 
                         <!--Preference title-->
-                        <TextView android:id="@+id/title_server"
+                        <TextView
+                            android:id="@+id/title_server"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:maxLines="1"
@@ -62,7 +63,8 @@
                             android:text="@string/pref_title_server" />
 
                         <!--Preference summary-->
-                        <TextView android:id="@+id/summary_server"
+                        <TextView
+                            android:id="@+id/summary_server"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_below="@id/title_server"
@@ -111,7 +113,8 @@
                         android:paddingBottom="16dp">
 
                         <!--Preference title-->
-                        <TextView android:id="@+id/title_key_name"
+                        <TextView
+                            android:id="@+id/title_key_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:maxLines="1"
@@ -120,7 +123,8 @@
                             android:text="@string/pref_title_key_name" />
 
                         <!--Preference summary-->
-                        <TextView android:id="@+id/summary_key_name"
+                        <TextView
+                            android:id="@+id/summary_key_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_below="@id/title_key_name"
@@ -161,7 +165,8 @@
                         android:paddingBottom="16dp">
 
                         <!--Preference title-->
-                        <TextView android:id="@+id/title_public_key"
+                        <TextView
+                            android:id="@+id/title_public_key"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:maxLines="1"
@@ -170,7 +175,8 @@
                             android:text="@string/pref_title_public_key" />
 
                         <!--Preference summary-->
-                        <TextView android:id="@+id/summary_public_key"
+                        <TextView
+                            android:id="@+id/summary_public_key"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_below="@id/title_public_key"
@@ -227,7 +233,8 @@
                         android:paddingBottom="16dp">
 
                         <!--Preference title-->
-                        <TextView android:id="@+id/title_version"
+                        <TextView
+                            android:id="@+id/title_version"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:maxLines="1"
@@ -236,7 +243,8 @@
                             android:text="@string/pref_title_version" />
 
                         <!--Preference summary-->
-                        <TextView android:id="@+id/summary_version"
+                        <TextView
+                            android:id="@+id/summary_version"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_below="@id/title_version"
