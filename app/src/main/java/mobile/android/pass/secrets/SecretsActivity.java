@@ -14,7 +14,6 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.ListPopupWindow;
-import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.SearchView;
 import android.text.TextUtils;
 import android.util.Log;
@@ -23,10 +22,16 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 
 import mobile.android.pass.R;
@@ -37,6 +42,7 @@ import mobile.android.pass.api.SecretsCallback;
 import mobile.android.pass.settings.SettingsActivity;
 import mobile.android.pass.unlock.UnlockActivity;
 import mobile.android.pass.utils.ClipboardHelper;
+import mobile.android.pass.utils.MeasurementHelper;
 import mobile.android.pass.utils.PgpHelper;
 import mobile.android.pass.utils.StorageHelper;
 
@@ -45,7 +51,7 @@ import mobile.android.pass.utils.StorageHelper;
 public class SecretsActivity extends AppCompatActivity implements
         SwipeRefreshLayout.OnRefreshListener, SearchView.OnQueryTextListener,
         LoaderManager.LoaderCallbacks<Cursor>, View.OnClickListener, SecretsCallback,
-        SecretCallback, PopupMenu.OnMenuItemClickListener {
+        SecretCallback, AdapterView.OnItemClickListener {
     private static final String TAG = SecretsActivity.class.toString();
     // Indicates the dialog displaying a secret.
     private static int SECRET_DIALOG_TAG = 0;
@@ -63,6 +69,7 @@ public class SecretsActivity extends AppCompatActivity implements
     private int mCurrentSecretPosition = NO_ACTIVE_SECRET;
     // Indicates what to do when the API gets a response.
     private int mCurrentSecretAction = -1;
+    private String[] mSecretActions;
     // Layout reference.
     private ListView mListView;
     // Restore/save layout state from/to this.
@@ -70,7 +77,7 @@ public class SecretsActivity extends AppCompatActivity implements
     // Passphrase to unlock the key currently in storage.
     private String mPassphrase;
     // View reference.
-    private PopupMenu mPopupMenu;
+    private ListPopupWindow mPopupWindow;
     // Key used to decrypt API responses.
     private PGPPrivateKey mPrivateKey;
     // Active query text for mSearchView.
@@ -99,6 +106,8 @@ public class SecretsActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
 
         Log.d(TAG, "onCreate");
+
+        mSecretActions = getResources().getStringArray(R.array.menu_item_secret_actions);
 
         // Load content from XML resource.
         setContentView(R.layout.activity_secrets);
@@ -166,9 +175,9 @@ public class SecretsActivity extends AppCompatActivity implements
         // Remember if a popup was visible.
         outState.putInt("mCurrentSecretPosition", mCurrentSecretPosition);
         outState.putBoolean("mShowingPopupMenu", mShowingPopupMenu);
-        if (mPopupMenu != null) {
+        if (mPopupWindow != null) {
             // Close it to prevent leaking it.
-            mPopupMenu.dismiss();
+            mPopupWindow.dismiss();
         }
 
         // Remember passphrase to be able to unlock the secret key on resume.
@@ -531,42 +540,48 @@ public class SecretsActivity extends AppCompatActivity implements
 
         // Get the already available View for position @popupMenuViewPosition.
         int childIndex = mCurrentSecretPosition - mListView.getFirstVisiblePosition();
-        View view = mListView.getChildAt(childIndex);
+        View itemView = mListView.getChildAt(childIndex);
 
         // Get the View to anchor the PopupMenu to from the ViewHolder.
-        SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) view.getTag();
+        SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) itemView.getTag();
         final View anchorView = holder.getActions();
 
-        // Inflate from XML resource.
-        mPopupMenu = new PopupMenu(anchorView.getContext(), anchorView);
-        mPopupMenu.getMenuInflater().inflate(R.menu.menu_item_secret, mPopupMenu.getMenu());
-        mPopupMenu.setOnMenuItemClickListener(this);
+        // Inflate.
+        mPopupWindow = new ListPopupWindow(anchorView.getContext());
+        mPopupWindow.setAnchorView(anchorView);
+        mPopupWindow.setOnItemClickListener(this);
+
+        ListAdapter adapter = new ArrayAdapter<>(anchorView.getContext(), R.layout.item_actions, R.id.title, mSecretActions);
+        mPopupWindow.setAdapter(adapter);
 
         // Remember when this popup is closed.
-        mPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
+        mPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
-            public void onDismiss(PopupMenu menu) {
+            public void onDismiss() {
                 Log.d(TAG, "mPopMenu dismissed");
 
-                mPopupMenu = null;
+                mPopupWindow = null;
                 mShowingPopupMenu = false;
                 // Cannot reset @mCurrentSecretPosition because clicking an item or clicking
                 // outside the popup to close it will both touch this listener.
             }
         });
 
+        // WRAP_CONTENT will set the width to the same width of the anchored view, set it manually.
+        int width = MeasurementHelper.measureArrayContentWidth(adapter, anchorView.getContext());
+        mPopupWindow.setWidth(width);
+
         // Check for finishing state in case the timeout expired.
         if (!isFinishing()) {
             // Show menu.
             mShowingPopupMenu = true;
-            mPopupMenu.show();
+            mPopupWindow.show();
 
             // Re-position immediately so it is positioned on top of anchorView (PopupMenu has no
             // OnShowListener).
-            ListPopupWindow.ForwardingListener listener = (ListPopupWindow.ForwardingListener) mPopupMenu.getDragToOpenListener();
-            listener.getPopup().setHorizontalOffset(-listener.getPopup().getWidth() + anchorView.getWidth());
-            listener.getPopup().setVerticalOffset(-anchorView.getHeight());
-            listener.getPopup().show();
+            mPopupWindow.setHorizontalOffset(-mPopupWindow.getWidth() + anchorView.getWidth());
+            mPopupWindow.setVerticalOffset(-anchorView.getHeight());
+            mPopupWindow.show();
         }
     }
 
@@ -581,7 +596,7 @@ public class SecretsActivity extends AppCompatActivity implements
         switch (view.getId()) {
             case R.id.item_secret:
                 // Show a dialog with credentials when clicking on the item itself.
-                mCurrentSecretAction = R.id.action_show_secret;
+                mCurrentSecretAction = 3;  // show password
                 Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
                 mSecretApi.getSecret(secret.getPath(), secret.getUsername());
                 break;
@@ -666,14 +681,20 @@ public class SecretsActivity extends AppCompatActivity implements
      * Show a popup or dialog depending on what is clicked on in the list.
      */
     @Override
-    public boolean onMenuItemClick(MenuItem item) {
-        mCurrentSecretAction = item.getItemId();
+    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+        // Immediately dismiss popup.
+        mPopupWindow.dismiss();
+
+        // Get secrets for list item.
         Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
+
+        // Do action.
+        mCurrentSecretAction = Arrays.asList(mSecretActions).indexOf(((TextView) view.findViewById(R.id.title)).getText());
         switch (mCurrentSecretAction) {
-            case R.id.action_copy_secret_password:
+            case 0:  // copy password
                 mSecretApi.getSecret(secret.getPath(), secret.getUsername());
                 break;
-            case R.id.action_show_secret:
+            case 3:  // show password
                 mSecretApi.getSecret(secret.getPath(), secret.getUsername());
                 break;
             default:
@@ -683,8 +704,6 @@ public class SecretsActivity extends AppCompatActivity implements
                 mCurrentSecretAction = -1;
                 mCurrentSecretPosition = NO_ACTIVE_SECRET;
         }
-
-        return true;
     }
 
     /**
@@ -692,7 +711,7 @@ public class SecretsActivity extends AppCompatActivity implements
      */
     private void handleSecretActions(Secret secret, String secretText) {
         switch (mCurrentSecretAction) {
-            case R.id.action_copy_secret_password:
+            case 0:  // copy password
                 if (secretText != null) {
                     secret.setSecretText(secretText);
                     ClipboardHelper.copy(getApplicationContext(), secret.getPassphrase());
@@ -705,7 +724,7 @@ public class SecretsActivity extends AppCompatActivity implements
                             .show();
                 }
                 break;
-            case R.id.action_show_secret:
+            case 3:  // show password
                 if (secretText != null) {
                     // Show a dialog.
                     SecretFragment fragment = SecretFragment.newInstance(secret, secretText);
@@ -724,13 +743,13 @@ public class SecretsActivity extends AppCompatActivity implements
      */
     private void handleNonSecretActions(Secret secret) {
         switch (mCurrentSecretAction) {
-            case R.id.action_copy_secret_username:
+            case 1:  // copy username
                 ClipboardHelper.copy(getApplicationContext(), secret.getUsername());
                 Toast.makeText(getApplicationContext(),
                         getString(R.string.toast_copy_secret_username), Toast.LENGTH_SHORT)
                         .show();
                 break;
-            case R.id.action_copy_secret_website:
+            case 2:  // copy website
                 ClipboardHelper.copy(getApplicationContext(), secret.getDomain());
                 Toast.makeText(getApplicationContext(),
                         getString(R.string.toast_copy_secret_website), Toast.LENGTH_SHORT)
