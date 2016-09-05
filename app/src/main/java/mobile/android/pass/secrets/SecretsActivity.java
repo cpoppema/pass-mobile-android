@@ -137,7 +137,6 @@ public class SecretsActivity extends AppCompatActivity implements
         mListView = (ListView) findViewById(R.id.list_view_secrets);
         mSecretsAdapter = new SecretsAdapter(this);
         mListView.setAdapter(mSecretsAdapter);
-        mListView.setFastScrollEnabled(true);  // FIXME: Can't fast scroll without triggering swipe-to-refresh.
 
         // .. and the wrapping swipe layout.
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_secrets);
