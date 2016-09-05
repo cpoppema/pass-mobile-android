@@ -623,6 +623,10 @@ public class SecretsActivity extends AppCompatActivity implements
             handleSecretActions(secret, secretText);
         }
 
+        // Prevent overlap when there is a noticeable delay, e.g. when this callback is
+        // called a second time, mCurrentSecretAction would be -1.
+        mSecretApi.cancelAll();
+
         // Reset temporary variables.
         mCurrentSecretAction = -1;
         mCurrentSecretPosition = NO_ACTIVE_SECRET;
@@ -635,6 +639,10 @@ public class SecretsActivity extends AppCompatActivity implements
         Toast.makeText(getApplicationContext(),
                 errorMessage, Toast.LENGTH_LONG)
                 .show();
+
+        // Prevent overlap when there is a noticeable delay, e.g. when this callback is
+        // called a second time, mCurrentSecretAction would be -1.
+        mSecretApi.cancelAll();
 
         // Reset temporary variables.
         mCurrentSecretAction = -1;
