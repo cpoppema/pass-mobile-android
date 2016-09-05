@@ -561,10 +561,12 @@ public class SecretsActivity extends AppCompatActivity implements
 
                 mPopupWindow = null;
                 mShowingPopupMenu = false;
-                // Cannot reset @mCurrentSecretPosition because clicking an item or clicking
-                // outside the popup to close it will both touch this listener.
+                // Cannot reset @mCurrentSecretPosition because clicking an item will trigger
+                // this listener before any code is executing that uses this position.
             }
         });
+        // Close when clicking outside the popup window, but don't trigger an event for a list item.
+        mPopupWindow.setModal(true);
 
         // WRAP_CONTENT will set the width to the same width of the anchored view, set it manually.
         int width = MeasurementHelper.measureArrayContentWidth(adapter, anchorView.getContext());
