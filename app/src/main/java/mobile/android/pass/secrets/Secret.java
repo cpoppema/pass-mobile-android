@@ -60,7 +60,7 @@ public class Secret implements Parcelable {
     }
 
     private Secret(Parcel in) {
-        String[] data = new String[3];
+        String[] data = new String[4];
 
         in.readStringArray(data);
         mDomain = data[0];
