@@ -197,6 +197,19 @@ public class SecretsActivity extends AppCompatActivity implements
         // Simply restore everything saved in onSaveInstanceState.
         mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
         mSearchFilter = savedInstanceState.getString("mSearchFilter");
+        // Broken with support lib v27.1.0:
+//        java.lang.NullPointerException: Attempt to invoke virtual method 'android.os.Parcelable android.widget.AbsListView$SavedState.getSuperState()' on a null object reference
+//        at android.widget.AbsListView.onRestoreInstanceState(AbsListView.java:1868)
+//        at mobile.android.pass.secrets.SecretsActivity$4$override.run(SecretsActivity.java:492)
+//        at mobile.android.pass.secrets.SecretsActivity$4$override.access$dispatch(SecretsActivity.java)
+//        at mobile.android.pass.secrets.SecretsActivity$4.run(SecretsActivity.java)
+//        at android.os.Handler.handleCallback(Handler.java:739)
+//        at android.os.Handler.dispatchMessage(Handler.java:95)
+//        at android.os.Looper.loop(Looper.java:148)
+//        at android.app.ActivityThread.main(ActivityThread.java:5417)
+//        at java.lang.reflect.Method.invoke(Native Method)
+//        at com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:726)
+//        at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:616)
         mListViewState = savedInstanceState.getParcelable("mListViewState");
         mCurrentSecretPosition = savedInstanceState.getInt("mCurrentSecretPosition");
         mShowingPopupMenu = savedInstanceState.getBoolean("mShowingPopupMenu");
