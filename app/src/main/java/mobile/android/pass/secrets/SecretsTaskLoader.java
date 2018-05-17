@@ -46,7 +46,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
         if (secrets != null) {
             int size = secrets.size();
             if (size > 0) {
-                String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED};
+                String[] columns = new String[]{BaseColumns._ID, Secret.DOMAIN, Secret.PATH, Secret.USERNAME, Secret.USERNAME_NORMALIZED, Secret.OTP};
                 cursor = new MatrixCursor(columns);
 
                 // Keep track of id separately since it may skip one when filtering a secret out.
@@ -63,6 +63,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
                         builder.add(Secret.PATH, secret.getPath());
                         builder.add(Secret.USERNAME, secret.getUsername());
                         builder.add(Secret.USERNAME_NORMALIZED, secret.getUsernameNormalized());
+                        builder.add(Secret.OTP, secret.getOtp());
                     }
                 }
 
