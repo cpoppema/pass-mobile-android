@@ -10,13 +10,14 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.ListPopupWindow;
 import android.support.v7.widget.SearchView;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -293,11 +294,21 @@ public class SecretsActivity extends AppCompatActivity implements
         inflater.inflate(R.menu.menu_secrets, menu);
 
         // Setup the SearchView.
+        // FIXME: focus on mSearchView shifts gear icon to the edge of the screen on eg. Pixel 2 as opposed to hiding it.
         MenuItem item = menu.findItem(R.id.action_search);
-        mSearchView = (SearchView) MenuItemCompat.getActionView(item);
+        mSearchView = (SearchView) item.getActionView();
         mSearchView.setOnQueryTextListener(this);
         mSearchView.setSubmitButtonEnabled(false);
         mSearchView.setIconifiedByDefault(true);
+
+        // back arrow + settings icon + spacing (unit=dp)
+        int used = 48 + 48 + 24;
+        // convert to pixels
+        int reserved = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, used, getResources().getDisplayMetrics());
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        mSearchView.setMaxWidth(metrics.widthPixels - reserved);
 
         // Restore search filter.
         if (mSearchFilter != null) {
