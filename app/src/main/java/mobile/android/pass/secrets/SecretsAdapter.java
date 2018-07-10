@@ -68,12 +68,16 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         // Setup the ViewHolder.
         holder.bindData(cursor);
         holder.getActions().setOnClickListener((View.OnClickListener) mContext);
+        holder.getOtp().setOnClickListener((View.OnClickListener) mContext);
         holder.getItem().setOnClickListener((View.OnClickListener) mContext);
 
         // Set the position as a tag so a PopUpMenu can easily be anchored to/restored for this
         // specific item.
         holder.getActions().setTag(cursor.getPosition());
-        // Set the position as a tag so a SecretDialogHelper can easily be displayed/restored for
+        // Set the position as a tag so a TokenFragment can easily be displayed/restored for
+        // this specific item.
+        holder.getOtp().setTag(cursor.getPosition());
+        // Set the position as a tag so a SecretFragment can easily be displayed/restored for
         // this specific item.
         holder.getItem().setTag(cursor.getPosition());
     }
@@ -120,6 +124,9 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         // Full length version of the username (as long as it fits).
         private TextView mUsername;
 
+        // Text "2FA" that opens a Fragment to view and copy a two-factor-auth token.
+        private TextView mOtp;
+
         // Icon that triggers a PopupMenu with actions (copy/show/etc.).
         private View mActions;
 
@@ -129,6 +136,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             mIconText = (TextView) v.findViewById(R.id.item_secret_icon_text);
             mDomain = (TextView) v.findViewById(R.id.item_secret_domain);
             mUsername = (TextView) v.findViewById(R.id.item_secret_username);
+            mOtp = (TextView) v.findViewById(R.id.item_secret_otp);
             mActions = v.findViewById(R.id.item_secret_actions);
 
             // Convert mIcon to a circular ImageView.
@@ -137,6 +145,10 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
         public View getActions() {
             return mActions;
+        }
+
+        public View getOtp() {
+            return mOtp;
         }
 
         public View getItem() {
@@ -148,10 +160,12 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             String domain = cursor.getString(cursor.getColumnIndex(Secret.DOMAIN));
             String username = cursor.getString(cursor.getColumnIndex(Secret.USERNAME));
             String iconText = Character.toString(domain.charAt(0));
+            String otp = cursor.getString(cursor.getColumnIndex(Secret.OTP));
 
             mDomain.setText(domain);
             mUsername.setText(username);
             mIconText.setText(iconText);
+            mOtp.setVisibility((otp == Secret.OTP_YES) ? View.VISIBLE : View.GONE);
         }
     }
 }

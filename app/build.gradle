@@ -38,4 +38,11 @@ dependencies {
 
     // Working Bouncy Castle project for Android
     implementation 'com.madgag.spongycastle:pg:1.54.0.0'
+
+    // TOTP/HOTP (2FA) simplified
+    // Not (yet) on mavencentral: https://github.com/jchambers/java-otp/issues/3
+    implementation 'com.github.jchambers:java-otp:6a57acc940'
+    // It requires however to do our own String -> Key conversion since that is it's input.
+    // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    implementation 'commons-codec:commons-codec:1.11'
 }

@@ -25,6 +25,9 @@
 
         <!-- Status bar background color -->
         <item name="colorPrimaryDark">@color/primary_dark</item>
+
+        <!-- This used to overlap regardless of prompt position, right now it doesn't overlap when rendered above it's anchor. -->
+        <item name="popupMenuStyle">@style/AppTheme.PopupOverlay</item>
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
@@ -34,7 +37,10 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="AppTheme.PopupOverlay" parent="@style/Widget.AppCompat.Light.PopupMenu">
+        <item name="android:overlapAnchor">true</item>
+        <item name="android:dropDownVerticalOffset">0dip</item>
+    </style>
 
     <style name="AppTheme.SecretImageViewIcon">
         <item name="android:background">@color/accent</item>
@@ -55,8 +61,23 @@
         <item name="android:textSize">14sp</item>
     </style>
 
+    <style name="AppTheme.SecretTextViewOtp">
+        <item name="android:textColor">@color/secondary_text</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
     <style name="AppTheme.SecretTextView">
         <item name="android:textColor">@color/primary_text</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="AppTheme.TokenTextView">
+        <item name="android:textColor">@color/primary_text</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="AppTheme.TokenExpirationTextView">
+        <item name="android:textColor">@color/secondary_text</item>
         <item name="android:textSize">16sp</item>
     </style>
 
