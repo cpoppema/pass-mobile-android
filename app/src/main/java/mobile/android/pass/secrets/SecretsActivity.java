@@ -7,7 +7,6 @@ import org.spongycastle.openpgp.PGPPrivateKey;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
@@ -71,12 +70,14 @@ public class SecretsActivity extends AppCompatActivity implements
     private int mCurrentSecretAction = -1;
     // Layout reference.
     private ListView mListView;
-    // Restore/save layout state from/to this.
-    private Parcelable mListViewState;
+    // Restore/save list scrolling position with these.
+    private int mListViewScrollIndex = 0;
+    private int mListViewScrollTop = 0;
+    private boolean mRestoreListViewState = false;
     // Passphrase to unlock the key currently in storage.
     private String mPassphrase;
     // View reference.
-    private PopupMenu mPopMenu;
+    private PopupMenu mPopupMenu;
     // Key used to decrypt API responses.
     private PGPPrivateKey mPrivateKey;
     // Active query text for mSearchView.
@@ -91,10 +92,8 @@ public class SecretsActivity extends AppCompatActivity implements
     private SecretsAdapter mSecretsAdapter;
     // API for getting secrets index.
     private SecretsApi mSecretsApi;
-    // Indicates if a popup for a secret is visible.
+    // Indicates if a PopupMenu for a secret is visible.
     private boolean mShowingPopupMenuSecret = false;
-    // Indicates if a popup for a token is visible.
-    private boolean mShowingPopupMenuToken = false;
     // Storage reference.
     private StorageHelper mStorageHelper;
     // Layout reference.
@@ -166,22 +165,27 @@ public class SecretsActivity extends AppCompatActivity implements
         // Remember current search filter.
         outState.putString("mSearchFilter", mSearchFilter);
 
-        // Save list state (e.g. scrolling position).
-        mListViewState = mListView.onSaveInstanceState();
-        outState.putParcelable("mListViewState", mListViewState);
+        // Save scrolling position.
+        mListViewScrollIndex = mListView.getFirstVisiblePosition();
+        View firstChild = mListView.getChildAt(0);
+        mListViewScrollTop = (firstChild == null) ? 0 : (firstChild.getTop() - mListView.getPaddingTop());
+        outState.putInt("mListViewScrollIndex", mListViewScrollIndex);
+        outState.putInt("mListViewScrollTop", mListViewScrollTop);
 
         // Remember if a popup for username/password was visible.
         outState.putInt("mCurrentSecretPosition", mCurrentSecretPosition);
+        // This particular boolean needs to be put before dismissing the mPopupMenu since it will
+        // reset it to false.
         outState.putBoolean("mShowingPopupMenuSecret", mShowingPopupMenuSecret);
-        if (mPopMenu != null) {
-            // Close it to prevent leaking it.
-            mPopMenu.dismiss();
-        }
-        // Remember if a popup for token was visible.
-        outState.putBoolean("mShowingPopupMenuToken", mShowingPopupMenuToken);
-        if (mPopMenu != null) {
-            // Close it to prevent leaking it.
-            mPopMenu.dismiss();
+
+        // Close it to prevent leaking it. Android still complains about a leaked window.
+        // Also see https://stackoverflow.com/a/40149536/248891 - I started working on using
+        // PopupWindow directly but getting the styling right is just too much of a pain.
+        // It's not just PopupMenu that has these issues, also see
+        // https://stackoverflow.com/q/23147177/248891
+        // There it's an options menu (same thing happens in this app).
+        if (mPopupMenu != null) {
+            mPopupMenu.dismiss();
         }
 
         // Remember passphrase to be able to unlock the secret key on resume.
@@ -202,21 +206,11 @@ public class SecretsActivity extends AppCompatActivity implements
         // Simply restore everything saved in onSaveInstanceState.
         mSecrets = savedInstanceState.getParcelableArrayList("mSecrets");
         mSearchFilter = savedInstanceState.getString("mSearchFilter");
-        // FIXME: Broken with support lib v27.1.0:
-        // java.lang.NullPointerException: Attempt to invoke virtual method 'android.os.Parcelable android.widget.AbsListView$SavedState.getSuperState()' on a null object reference
-        // at android.widget.AbsListView.onRestoreInstanceState(AbsListView.java:1891)
-        // at mobile.android.pass.secrets.SecretsActivity$4.run(SecretsActivity.java:518)
-        // at android.os.Handler.handleCallback(Handler.java:789)
-        // at android.os.Handler.dispatchMessage(Handler.java:98)
-        // at android.os.Looper.loop(Looper.java:164)
-        // at android.app.ActivityThread.main(ActivityThread.java:6541)
-        // at java.lang.reflect.Method.invoke(Native Method)
-        // at com.android.internal.os.Zygote$MethodAndArgsCaller.run(Zygote.java:240)
-        // at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:767)
-        mListViewState = savedInstanceState.getParcelable("mListViewState");
+        mListViewScrollTop = savedInstanceState.getInt("mListViewScrollTop");
+        mListViewScrollIndex = savedInstanceState.getInt("mListViewScrollIndex");
+        mRestoreListViewState = true;
         mCurrentSecretPosition = savedInstanceState.getInt("mCurrentSecretPosition");
         mShowingPopupMenuSecret = savedInstanceState.getBoolean("mShowingPopupMenuSecret");
-        mShowingPopupMenuToken= savedInstanceState.getBoolean("mShowingPopupMenuToken");
         mPassphrase = savedInstanceState.getString("mPassphrase");
         mTimeActivated = savedInstanceState.getInt("mTimeActivated");
 
@@ -480,12 +474,12 @@ public class SecretsActivity extends AppCompatActivity implements
             data.moveToFirst();
         } else if (loader.getId() == LOADER_ID_FILTER) {
             // Restore scrolling position in the ListView.
-            if (mListViewState != null) {
+            if (mRestoreListViewState) {
                 mListView.post(new Runnable() {
                     @Override
                     public void run() {
                         // Restore the ListView to a position any dialog or popup was visible for.
-                        if (mCurrentSecretPosition != NO_ACTIVE_SECRET) {
+                        if (mCurrentSecretPosition != NO_ACTIVE_SECRET && mShowingPopupMenuSecret) {
                             mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
                                 private int timesScrolled = 0;
 
@@ -513,15 +507,15 @@ public class SecretsActivity extends AppCompatActivity implements
                             });
                         }
 
-                        mListView.requestFocus();
-                        mListView.onRestoreInstanceState(mListViewState);
-                        mListViewState = null;
-
                         // Make sure mPopupMenuPosition is actually on screen and not rendered
                         // just below the current viewport.
                         if (mCurrentSecretPosition > mListView.getLastVisiblePosition()) {
                             mListView.setSelection(mCurrentSecretPosition);
+                        } else {
+                            mListView.setSelectionFromTop(mListViewScrollIndex, mListViewScrollTop);
                         }
+                        mListView.requestFocus();
+                        mRestoreListViewState = false;
                     }
                 });
             }
@@ -572,31 +566,31 @@ public class SecretsActivity extends AppCompatActivity implements
         SecretsAdapter.SecretViewHolder holder = (SecretsAdapter.SecretViewHolder) itemView.getTag();
         final View anchorView = holder.getActions();
 
-        mPopMenu = new PopupMenu(anchorView.getContext(), anchorView);
-        mPopMenu.setGravity(Gravity.END);
+        mPopupMenu = new PopupMenu(anchorView.getContext(), anchorView);
+        mPopupMenu.setGravity(Gravity.END);
 
         // Inflate.
-        mPopMenu.getMenuInflater().inflate(R.menu.menu_secret_actions, mPopMenu.getMenu());
+        mPopupMenu.getMenuInflater().inflate(R.menu.menu_secret_actions, mPopupMenu.getMenu());
 
         // Remember when this popup is closed.
-        mPopMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
+        mPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
             @Override
             public void onDismiss(PopupMenu menu) {
-                Log.d(TAG, "mPopMenu dismissed");
+                Log.d(TAG, "mPopupMenu dismissed");
 
-                mPopMenu = null;
+                mPopupMenu = null;
                 mShowingPopupMenuSecret = false;
                 // Cannot reset @mCurrentSecretPosition because clicking an item will trigger
                 // this listener before any code is executing that uses this position.
             }
         });
-        mPopMenu.setOnMenuItemClickListener(this);
+        mPopupMenu.setOnMenuItemClickListener(this);
 
         // Check for finishing state in case the timeout expired.
         if (!isFinishing()) {
             // Show menu.
             mShowingPopupMenuSecret = true;
-            mPopMenu.show();
+            mPopupMenu.show();
         }
     }
 
@@ -736,7 +730,7 @@ public class SecretsActivity extends AppCompatActivity implements
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         // Immediately dismiss popup.
-        mPopMenu.dismiss();
+        mPopupMenu.dismiss();
 
         // Get secrets for list item.
         Secret secret = new Secret((Cursor) mSecretsAdapter.getItem(mCurrentSecretPosition));
