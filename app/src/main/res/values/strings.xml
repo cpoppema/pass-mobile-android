@@ -87,8 +87,7 @@
     <string name="prompt_key_name">Key name</string>
     <string name="prompt_passphrase">Passphrase</string>
     <string name="action_create_key">GENERATE</string>
+    <string name="cancel_action_create_key">CANCEL</string>
 
     <string name="error_field_required">This field is required</string>
-
-    <string name="progress_generating_key">Generating key</string>
 </resources>
