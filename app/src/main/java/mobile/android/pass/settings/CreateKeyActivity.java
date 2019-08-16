@@ -75,8 +75,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             public void onClick(View view) {
                 Log.i(TAG, "progressbar dismissed, cancel loader");
 
-                if (getSupportLoaderManager().hasRunningLoaders()) {
-                    getSupportLoaderManager().getLoader(0).cancelLoad();
+                if (LoaderManager.getInstance(CreateKeyActivity.this).hasRunningLoaders()) {
+                    LoaderManager.getInstance(CreateKeyActivity.this).getLoader(0).cancelLoad();
                 }
 
                 showProgress(false);
@@ -191,7 +191,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             // Save key name.
             mStorageHelper.putKeyName(keyName);
 
-            getSupportLoaderManager().restartLoader(0, null, this);
+            LoaderManager.getInstance(CreateKeyActivity.this).restartLoader(0, null, this);
         }
     }
 

@@ -147,7 +147,7 @@ public class SecretsActivity extends AppCompatActivity implements
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
-                    getSupportLoaderManager().initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
+                    LoaderManager.getInstance(SecretsActivity.this).initLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
                 }
             });
         }
@@ -219,7 +219,7 @@ public class SecretsActivity extends AppCompatActivity implements
         mSwipeRefreshLayout.post(new Runnable() {
             @Override
             public void run() {
-                getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
+                LoaderManager.getInstance(SecretsActivity.this).restartLoader(LOADER_ID_FILTER, null, SecretsActivity.this);
             }
         });
     }
@@ -274,7 +274,7 @@ public class SecretsActivity extends AppCompatActivity implements
                     @Override
                     public void run() {
                         Log.d(TAG, "Resuming, but layout was still refreshing, issue new refresh task loader");
-                        getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
+                        LoaderManager.getInstance(SecretsActivity.this).restartLoader(LOADER_ID_REFRESH, null, SecretsActivity.this);
                     }
                 });
             }
@@ -354,7 +354,7 @@ public class SecretsActivity extends AppCompatActivity implements
             mSearchView.setIconified(true);
         }
 
-        getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
+        LoaderManager.getInstance(SecretsActivity.this).restartLoader(LOADER_ID_REFRESH, null, this);
     }
 
     /**
@@ -401,7 +401,7 @@ public class SecretsActivity extends AppCompatActivity implements
         }
 
         mSearchFilter = newFilter;
-        getSupportLoaderManager().restartLoader(LOADER_ID_FILTER, null, this);
+        LoaderManager.getInstance(SecretsActivity.this).restartLoader(LOADER_ID_FILTER, null, this);
 
         return true;
     }
@@ -708,7 +708,7 @@ public class SecretsActivity extends AppCompatActivity implements
             }
 
             if (mSecrets != null) {
-                getSupportLoaderManager().restartLoader(LOADER_ID_REFRESH, null, this);
+                LoaderManager.getInstance(SecretsActivity.this).restartLoader(LOADER_ID_REFRESH, null, this);
             }
         }
     }
