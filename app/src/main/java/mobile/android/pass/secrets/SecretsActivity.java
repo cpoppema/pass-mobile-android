@@ -389,7 +389,7 @@ public class SecretsActivity extends AppCompatActivity implements
         // Called when the action bar search text has changed. Update
         // the search filter, and restart the loader to do a new query
         // with this filter.
-        String newFilter = !TextUtils.isEmpty(filterText) ? filterText : null;
+        String newFilter = !TextUtils.isEmpty(filterText) ? filterText.trim() : null;
 
         // Prevents restarting the loader when restoring state.
         if (mSearchFilter == null && newFilter == null) {
