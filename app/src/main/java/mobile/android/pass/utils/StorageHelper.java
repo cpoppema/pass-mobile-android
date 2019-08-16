@@ -4,9 +4,10 @@ import org.spongycastle.openpgp.PGPSecretKey;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 import java.nio.charset.Charset;
+
+import androidx.preference.PreferenceManager;
 
 /**
  * Class that acts as middleware between a storage engine and the app.
