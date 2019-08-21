@@ -27,6 +27,9 @@
         <item name="colorPrimaryDark">@color/primary_dark</item>
 
         <!-- This used to overlap regardless of prompt position, right now it doesn't overlap when rendered above it's anchor. -->
+        <!-- Today's alternative is to write
+             mPopMenu = new PopupMenu(anchorView.getContext(), anchorView, Gravity.END, R.attr.actionOverflowMenuStyle, 0);
+        -->
         <item name="popupMenuStyle">@style/AppTheme.PopupOverlay</item>
     </style>
 

@@ -1,12 +1,18 @@
 apply plugin: 'com.android.application'
 
+allprojects {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+}
+
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
 
     defaultConfig {
         applicationId "mobile.android.pass"
         minSdkVersion 21
-        targetSdkVersion 27
+        targetSdkVersion 29
         versionCode 12
         versionName "0.2.0"
     }
@@ -20,21 +26,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    buildToolsVersion '27.0.3'
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     // Android backwards/forwards compatibility
-    // Upgrading to 27.1.0 removes access to ListViewCompat:
-    // https://android.googlesource.com/platform/frameworks/support/+/c39d9c75590eca86a5e7e32a8824ba04a0d42e9b%5E%21/#F234
-    implementation 'com.android.support:appcompat-v7:27.0.2'
-    implementation 'com.android.support:design:27.0.2'
-    implementation 'com.android.support:support-v4:27.0.2'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.preference:preference:1.1.0-rc01'
 
     // Android official http lib
-    implementation 'com.android.volley:volley:1.0.0'
+    implementation 'com.android.volley:volley:1.1.0'
 
     // Working Bouncy Castle project for Android
     implementation 'com.madgag.spongycastle:pg:1.54.0.0'
@@ -42,7 +52,7 @@ dependencies {
     // TOTP/HOTP (2FA) simplified
     // Not (yet) on mavencentral: https://github.com/jchambers/java-otp/issues/3
     implementation 'com.github.jchambers:java-otp:6a57acc940'
-    // It requires however to do our own String -> Key conversion since that is it's input.
+    // It requires however to do our own String -> Key conversion since that is its input.
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     implementation 'commons-codec:commons-codec:1.11'
 }

@@ -2,13 +2,11 @@ package mobile.android.pass.settings;
 
 import org.spongycastle.openpgp.PGPSecretKey;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
-import android.support.v7.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.Loader;
+import androidx.appcompat.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -26,16 +24,18 @@ import mobile.android.pass.utils.StorageHelper;
 public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<PGPSecretKey> {
     private static final String TAG = CreateKeyActivity.class.toString();
 
-    // Form view (containing the inputs and button).
+    // Generate key form view (containing the inputs and button).
     private View mCreateKeyFormView;
+    // Progress & cancel key view.
+    private View mProgressCancelKeyView;
     // Key name input.
     private EditText mKeyNameView;
     // Passphrase input.
     private EditText mPassphraseView;
     // Create key button.
     private Button mCreateKeyButton;
-    // Dialog to show while generating the keypair.
-    private ProgressDialog mProgressDialog;
+    // Cancel key button
+    private Button mCancelKeyButton;
     // Storage reference.
     private StorageHelper mStorageHelper;
 
@@ -68,13 +68,29 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
                 createKeypair();
             }
         });
+
+        // Bind button to cancel generating a keypair.
+        mCancelKeyButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "progressbar dismissed, cancel loader");
+
+                if (LoaderManager.getInstance(CreateKeyActivity.this).hasRunningLoaders()) {
+                    LoaderManager.getInstance(CreateKeyActivity.this).getLoader(0).cancelLoad();
+                }
+
+                showProgress(false);
+            }
+        });
     }
 
     private void setViews() {
         mCreateKeyFormView = findViewById(R.id.generate_key_form);
+        mProgressCancelKeyView = findViewById(R.id.cancel_generate_key_form);
         mKeyNameView = (EditText) findViewById(R.id.key_name);
         mPassphraseView = (EditText) findViewById(R.id.passphrase);
         mCreateKeyButton = (Button) findViewById(R.id.generate_key_button);
+        mCancelKeyButton = (Button) findViewById(R.id.cancel_generate_key_button);
     }
 
     @Override
@@ -103,11 +119,6 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         super.onStop();
 
         Log.i(TAG, "onStop");
-
-        if (mProgressDialog != null && mProgressDialog.isShowing()) {
-            // Close it to prevent leaking it.
-            mProgressDialog.dismiss();
-        }
     }
 
     @Override
@@ -180,36 +191,12 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             // Save key name.
             mStorageHelper.putKeyName(keyName);
 
-            getSupportLoaderManager().restartLoader(0, null, this);
+            LoaderManager.getInstance(CreateKeyActivity.this).restartLoader(0, null, this);
         }
     }
 
     /** Shows or hides the progress dialog and then hides or shows the form. **/
     private void showProgress(final boolean show) {
-        if (mProgressDialog == null) {
-            // Setup the ProgressDialog for the first time.
-            mProgressDialog = new ProgressDialog(this, R.style.AppTheme_ProgressDialogTextView);
-            mProgressDialog.setIndeterminate(true);
-            mProgressDialog.setMessage(getString(R.string.progress_generating_key));
-
-            // Don't dismiss on touch outside (back button still works).
-            mProgressDialog.setCanceledOnTouchOutside(false);
-
-            // Cancel task and toggle views when dialog is dismissed.
-            mProgressDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialogInterface) {
-                    Log.i(TAG, "progress dialog dismissed, cancel loader");
-
-                    if (getSupportLoaderManager().hasRunningLoaders()) {
-                        getSupportLoaderManager().getLoader(0).cancelLoad();
-                    }
-
-                    showProgress(false);
-                }
-            });
-        }
-
         // When @show is true show the progress and hide the form otherwise vice versa.
         if (show) {
             // Dismiss keyboard.
@@ -219,18 +206,14 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
                 imm.hideSoftInputFromWindow(viewWithFocus.getWindowToken(), 0);
             }
 
-            // Hide form.
+            // Hide generate form.
             mCreateKeyFormView.setVisibility(View.GONE);
-
-            // Show progress dialog.
-            mProgressDialog.show();
+            // Show cancel form.
+            mProgressCancelKeyView.setVisibility(View.VISIBLE);
         } else {
-            // Hide progress dialog.
-            if (mProgressDialog.isShowing()) {
-                mProgressDialog.dismiss();
-            }
-
-            // Show form.
+            // Hide cancel form.
+            mProgressCancelKeyView.setVisibility(View.GONE);
+            // Show generate form.
             mCreateKeyFormView.setVisibility(View.VISIBLE);
         }
     }

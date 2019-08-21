@@ -3,7 +3,7 @@ package mobile.android.pass.settings;
 import org.spongycastle.openpgp.PGPSecretKey;
 
 import android.content.Context;
-import android.support.v4.content.AsyncTaskLoader;
+import androidx.loader.content.AsyncTaskLoader;
 import android.util.Log;
 
 import mobile.android.pass.utils.PgpHelper;

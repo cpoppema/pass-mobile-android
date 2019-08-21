@@ -2,8 +2,8 @@ package mobile.android.pass.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
-import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
-import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.widget.ImageView;
 
 public class ImageViewHelper {
