@@ -61,7 +61,8 @@ public class ServerNameFragment extends DialogFragment {
 
         // Cannot put this in onCreateView nor onViewCreated.
         final EditText serverInput = (EditText) v.findViewById(R.id.server_name);
-        serverInput.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        serverInput.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+
         if (!TextUtils.isEmpty(mStorageHelper.getServerAddress())) {
             serverInput.setText(mStorageHelper.getServerAddress());
         } else {
@@ -117,6 +118,7 @@ public class ServerNameFragment extends DialogFragment {
 
         if (savedInstanceState == null) {
             // Show keyboard.
+            serverInput.requestFocus();
             alertDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
         }
 

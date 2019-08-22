@@ -7,6 +7,8 @@ import android.os.Bundle;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -91,6 +93,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         mPassphraseView = (EditText) findViewById(R.id.passphrase);
         mCreateKeyButton = (Button) findViewById(R.id.generate_key_button);
         mCancelKeyButton = (Button) findViewById(R.id.cancel_generate_key_button);
+
+        mKeyNameView.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
     }
 
     @Override
@@ -187,6 +191,8 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             // There was an error; don't attempt anything and focus the first
             // form field with an error.
             focusView.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(focusView, InputMethodManager.SHOW_IMPLICIT);
         } else {
             // Save key name.
             mStorageHelper.putKeyName(keyName);
