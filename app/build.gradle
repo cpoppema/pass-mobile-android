@@ -15,8 +15,8 @@ android {
         applicationId "mobile.android.pass"
         minSdkVersion 30
         targetSdk 34
-        versionCode 14
-        versionName "0.2.2"
+        versionCode 16
+        versionName "0.2.3"
     }
     buildTypes {
         debug {
