@@ -1,36 +1,42 @@
 apply plugin: 'com.android.application'
 
 allprojects {
-    tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    tasks.withType(JavaCompile).tap {
+        configureEach {
+            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        }
     }
 }
 
 android {
-    compileSdkVersion 29
+    compileSdk 34
 
     defaultConfig {
         applicationId "mobile.android.pass"
-        minSdkVersion 21
-        targetSdkVersion 29
+        minSdkVersion 30
+        targetSdk 34
         versionCode 14
         versionName "0.2.2"
     }
     buildTypes {
         debug {
             debuggable true
+            manifestPlaceholders.usesCleartextTraffic = "true"
         }
         release {
             debuggable false
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            manifestPlaceholders.usesCleartextTraffic = "false"
         }
     }
-    lintOptions {
-        checkReleaseBuilds false
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
+    namespace 'mobile.android.pass'
+    lint {
         abortOnError false
+        checkReleaseBuilds false
+    }
+    buildFeatures {
+        buildConfig true
     }
 }
 
@@ -38,21 +44,21 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     // Android backwards/forwards compatibility
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.preference:preference:1.1.0-rc01'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'androidx.window:window:1.2.0'
 
     // Android official http lib
-    implementation 'com.android.volley:volley:1.1.0'
+    implementation 'com.android.volley:volley:1.2.1'
 
     // Working Bouncy Castle project for Android
     implementation 'com.madgag.spongycastle:pg:1.54.0.0'
 
     // TOTP/HOTP (2FA) simplified
-    // Not (yet) on mavencentral: https://github.com/jchambers/java-otp/issues/3
-    implementation 'com.github.jchambers:java-otp:6a57acc940'
+    implementation 'com.eatthepath:java-otp:0.4.0'
     // It requires however to do our own String -> Key conversion since that is its input.
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
-    implementation 'commons-codec:commons-codec:1.11'
+    implementation 'commons-codec:commons-codec:1.16.1'
 }

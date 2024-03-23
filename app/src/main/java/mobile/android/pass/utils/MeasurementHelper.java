@@ -18,12 +18,11 @@ public class MeasurementHelper {
         View itemView = null;
         int itemType = 0;
 
-        final ListAdapter adapter = listAdapter;
         final int widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
         final int heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-        final int count = adapter.getCount();
+        final int count = listAdapter.getCount();
         for (int i = 0; i < count; i++) {
-            final int positionType = adapter.getItemViewType(i);
+            final int positionType = listAdapter.getItemViewType(i);
             if (positionType != itemType) {
                 itemType = positionType;
                 itemView = null;
@@ -33,7 +32,7 @@ public class MeasurementHelper {
                 mMeasureParent = new FrameLayout(context);
             }
 
-            itemView = adapter.getView(i, itemView, mMeasureParent);
+            itemView = listAdapter.getView(i, itemView, mMeasureParent);
             itemView.measure(widthMeasureSpec, heightMeasureSpec);
 
             final int itemWidth = itemView.getMeasuredWidth();

@@ -1,8 +1,9 @@
 package mobile.android.pass.unlock;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,7 +13,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 
 import mobile.android.pass.R;
 import mobile.android.pass.settings.SettingsActivity;
@@ -54,34 +54,25 @@ public class UnlockActivity extends AppCompatActivity {
             showDialog();
         } else {
             // Restore open dialog if any.
-            switch (mDialogTag) {
-                case NO_DIALOG_TAG:
-                    // There was no dialog visible.
-                    Log.i(TAG, "mDialogTag: NO_DIALOG_TAG");
-                    break;
-                case SETTINGS_DIALOG_TAG:
-                    Log.i(TAG, "mDialogTag: SETTINGS_DIALOG_TAG");
-                    showSettingsDialog();
-                    break;
-                case UNLOCK_DIALOG_TAG:
-                    Log.i(TAG, "mDialogTag: UNLOCK_DIALOG_TAG");
-                    // This is dealt with in the FragmentManager.
-                    break;
+            if (mDialogTag == NO_DIALOG_TAG) {
+                // There was no dialog visible.
+                Log.i(TAG, "mDialogTag: NO_DIALOG_TAG");
+            } else if (mDialogTag == SETTINGS_DIALOG_TAG) {
+                Log.i(TAG, "mDialogTag: SETTINGS_DIALOG_TAG");
+                showSettingsDialog();
+            } else if (mDialogTag == UNLOCK_DIALOG_TAG) {
+                Log.i(TAG, "mDialogTag: UNLOCK_DIALOG_TAG");
+                // This is dealt with in the FragmentManager.
             }
         }
 
         // Show dialog when tapping open area.
         LinearLayoutCompat l = (LinearLayoutCompat) findViewById(R.id.unlock);
-        l.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showDialog();
-            }
-        });
+        l.setOnClickListener(view -> showDialog());
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.i(TAG, "onSaveInstanceState");
 
@@ -142,14 +133,12 @@ public class UnlockActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.open_settings:
-                Log.i(TAG, "Start SettingsActivity");
-                startActivity(new Intent(this, SettingsActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (item.getItemId() == R.id.open_settings) {
+            Log.i(TAG, "Start SettingsActivity");
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
     /** Sets the current open dialog state. **/
@@ -179,29 +168,16 @@ public class UnlockActivity extends AppCompatActivity {
     private void showSettingsDialog() {
         mDialog = new AlertDialog.Builder(UnlockActivity.this)
                 .setMessage(R.string.dialog_settings_message)
-                .setPositiveButton(R.string.dialog_settings_button, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Log.i(TAG, "Start SettingsActivity");
-                        startActivity(new Intent(UnlockActivity.this, SettingsActivity.class));
-                    }
+                .setPositiveButton(R.string.dialog_settings_button, (dialogInterface, i) -> {
+                    Log.i(TAG, "Start SettingsActivity");
+                    startActivity(new Intent(UnlockActivity.this, SettingsActivity.class));
                 })
                 .setTitle(R.string.dialog_settings_title)
                 .create();
 
-        mDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                mDialogTag = NO_DIALOG_TAG;
-            }
-        });
+        mDialog.setOnDismissListener(dialogInterface -> mDialogTag = NO_DIALOG_TAG);
 
-        mDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-                mDialogTag = SETTINGS_DIALOG_TAG;
-            }
-        });
+        mDialog.setOnShowListener(dialogInterface -> mDialogTag = SETTINGS_DIALOG_TAG);
 
         mDialog.show();
     }

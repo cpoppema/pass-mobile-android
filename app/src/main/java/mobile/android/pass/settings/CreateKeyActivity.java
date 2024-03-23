@@ -4,6 +4,8 @@ import org.spongycastle.openpgp.PGPSecretKey;
 
 import android.content.Context;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,10 +15,11 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+
+import java.util.Objects;
 
 import mobile.android.pass.R;
 import mobile.android.pass.utils.StorageHelper;
@@ -51,7 +54,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         setContentView(R.layout.activity_generate_key);
 
         // Add back button to action bar.
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
 
         // Setup the inputs and button.
         setViews();
@@ -64,25 +67,17 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         }
 
         // Bind button to generate a keypair.
-        mCreateKeyButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                createKeypair();
-            }
-        });
+        mCreateKeyButton.setOnClickListener(view -> createKeypair());
 
         // Bind button to cancel generating a keypair.
-        mCancelKeyButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.i(TAG, "progressbar dismissed, cancel loader");
+        mCancelKeyButton.setOnClickListener(view -> {
+            Log.i(TAG, "progressbar dismissed, cancel loader");
 
-                if (LoaderManager.getInstance(CreateKeyActivity.this).hasRunningLoaders()) {
-                    LoaderManager.getInstance(CreateKeyActivity.this).getLoader(0).cancelLoad();
-                }
-
-                showProgress(false);
+            if (LoaderManager.getInstance(CreateKeyActivity.this).hasRunningLoaders()) {
+                Objects.requireNonNull(LoaderManager.getInstance(CreateKeyActivity.this).getLoader(0)).cancelLoad();
             }
+
+            showProgress(false);
         });
     }
 
@@ -98,7 +93,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
         Log.i(TAG, "onSaveInstanceState");
@@ -148,13 +143,11 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (item.getItemId() == android.R.id.home) {
+            getOnBackPressedDispatcher().onBackPressed();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
     /** Validates input and creates a loader when it's valid. **/
@@ -224,6 +217,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
         }
     }
 
+    @NonNull
     @Override
     public Loader<PGPSecretKey> onCreateLoader(int id, Bundle args) {
         Log.d(TAG, "onCreateLoader");
@@ -234,7 +228,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     @Override
-    public void onLoadFinished(Loader<PGPSecretKey> loader, PGPSecretKey keyPair) {
+    public void onLoadFinished(@NonNull Loader<PGPSecretKey> loader, PGPSecretKey keyPair) {
         Log.d(TAG, "onLoadFinished");
 
         if (keyPair == null) {
@@ -250,7 +244,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     }
 
     @Override
-    public void onLoaderReset(Loader<PGPSecretKey> loader) {
+    public void onLoaderReset(@NonNull Loader<PGPSecretKey> loader) {
         Log.d(TAG, "onLoaderReset");
 
         // Close activity, returning to the SettingsActivity.

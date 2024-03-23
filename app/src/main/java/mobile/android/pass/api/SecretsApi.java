@@ -14,7 +14,7 @@ import android.content.Context;
  * Api class for getting a list of secrets.
  */
 public class SecretsApi extends Api implements Response.Listener<JSONObject>, Response.ErrorListener {
-    private SecretsCallback mCallback;
+    private final SecretsCallback mCallback;
 
     public SecretsApi(Context context, SecretsCallback callback) {
         super(context);

@@ -3,6 +3,8 @@ package mobile.android.pass.settings;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -15,6 +17,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.preference.PreferenceManager;
+
+import java.util.Objects;
+
 import mobile.android.pass.BuildConfig;
 import mobile.android.pass.R;
 import mobile.android.pass.utils.ClipboardHelper;
@@ -65,7 +70,7 @@ public class SettingsActivity extends AppCompatActivity
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // Add back button to action bar.
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
 
         setContentView(R.layout.activity_settings);
         mSettingsView = findViewById(R.id.settings);
@@ -86,21 +91,18 @@ public class SettingsActivity extends AppCompatActivity
 
         if (savedInstanceState != null) {
             // Restore open dialog if any.
-            switch (mDialogTag) {
-                case NO_DIALOG_TAG:
-                    // There was no dialog visible.
-                    Log.i(TAG, "mDialogTag: NO_DIALOG_TAG");
-                    break;
-                case SERVER_NAME_DIALOG_TAG:
-                    Log.i(TAG, "mDialogTag: SERVER_NAME_DIALOG_TAG");
-                    // This is dealt with in the FragmentManager.
-                    break;
+            if (mDialogTag == NO_DIALOG_TAG) {
+                // There was no dialog visible.
+                Log.i(TAG, "mDialogTag: NO_DIALOG_TAG");
+            } else if (mDialogTag == SERVER_NAME_DIALOG_TAG) {
+                Log.i(TAG, "mDialogTag: SERVER_NAME_DIALOG_TAG");
+                // This is dealt with in the FragmentManager.
             }
         }
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
         Log.i(TAG, "onSaveInstanceState");
@@ -122,12 +124,7 @@ public class SettingsActivity extends AppCompatActivity
             // Restore ContextMenu's visibility.
             mContextMenuOpen = savedInstanceState.getBoolean("mContextMenuOpen");
             if (mContextMenuOpen) {
-                mSettingsView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        showContextMenu();
-                    }
-                });
+                mSettingsView.post(this::showContextMenu);
             }
 
             // Restore open dialog state.
@@ -163,31 +160,30 @@ public class SettingsActivity extends AppCompatActivity
     public boolean onContextItemSelected(MenuItem item) {
         mContextMenuOpen = false;
 
-        switch (item.getItemId()) {
-            case R.id.action_copy_key:
-                Log.i(TAG, "Public key action: " + item.toString());
-                String keyToCopy = mStorageHelper.getArmoredPublicKey();
-                Log.i(TAG, "Public key: " + keyToCopy);
-                ClipboardHelper.copy(this, keyToCopy);
-                Toast.makeText(getApplicationContext(),
-                        getString(R.string.toast_copy_key), Toast.LENGTH_SHORT)
-                        .show();
-                return true;
-            case R.id.action_copy_key_id:
-                Log.i(TAG, "Public key action: " + item.toString());
-                String keyID = mStorageHelper.getKeyID();
-                Log.i(TAG, "Key ID: " + keyID);
-                ClipboardHelper.copy(this, keyID);
-                Toast.makeText(getApplicationContext(),
-                        getString(R.string.toast_copy_key_id), Toast.LENGTH_SHORT)
-                        .show();
-                return true;
-            case R.id.action_show_key:
-                startActivity(new Intent(this, PublicKeyActivity.class));
-                return true;
-            default:
-                return super.onContextItemSelected(item);
+        int itemId = item.getItemId();
+        if (itemId == R.id.action_copy_key) {
+            Log.i(TAG, "Public key action: " + item);
+            String keyToCopy = mStorageHelper.getArmoredPublicKey();
+            Log.i(TAG, "Public key: " + keyToCopy);
+            ClipboardHelper.copy(this, keyToCopy);
+            Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_key), Toast.LENGTH_SHORT)
+                    .show();
+            return true;
+        } else if (itemId == R.id.action_copy_key_id) {
+            Log.i(TAG, "Public key action: " + item);
+            String keyID = mStorageHelper.getKeyID();
+            Log.i(TAG, "Key ID: " + keyID);
+            ClipboardHelper.copy(this, keyID);
+            Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_key_id), Toast.LENGTH_SHORT)
+                    .show();
+            return true;
+        } else if (itemId == R.id.action_show_key) {
+            startActivity(new Intent(this, PublicKeyActivity.class));
+            return true;
         }
+        return super.onContextItemSelected(item);
     }
 
     public void onContextMenuClosed(Menu menu) {
@@ -247,11 +243,11 @@ public class SettingsActivity extends AppCompatActivity
 
         String summary = mSharedPreferences.getString(key, "");
         if (!summary.isEmpty()) {
-            if (key == StorageHelper.StorageKey.SERVER_ADDRESS.toString()) {
+            if (key.equals(StorageHelper.StorageKey.SERVER_ADDRESS.toString())) {
                 mServerNameText.setText(summary);
-            } else if (key == StorageHelper.StorageKey.PUBLIC_KEY_NAME.toString()) {
+            } else if (key.equals(StorageHelper.StorageKey.PUBLIC_KEY_NAME.toString())) {
                 mKeyNameText.setText(summary);
-            } else if (key == StorageHelper.StorageKey.PUBLIC_KEY_ID.toString()) {
+            } else if (key.equals(StorageHelper.StorageKey.PUBLIC_KEY_ID.toString())) {
                 mKeyIdText.setText(summary);
             }
         }
@@ -270,31 +266,27 @@ public class SettingsActivity extends AppCompatActivity
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.pref_key_server_name:
-                showServerNameDialog();
-                break;
-            case R.id.pref_key_public_key:
-                showContextMenu();
-                break;
-            default:
-                Log.i(TAG, "Clicked on " + v.getId());
-                break;
+        int id = v.getId();
+        if (id == R.id.pref_key_server_name) {
+            showServerNameDialog();
+        } else if (id == R.id.pref_key_public_key) {
+            showContextMenu();
+        } else {
+            Log.i(TAG, "Clicked on " + v.getId());
         }
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-            case R.id.open_generate_key:
-                Log.i(TAG, "Start CreateKeyActivity");
-                startActivity(new Intent(this, CreateKeyActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        int itemId = item.getItemId();
+        if (itemId == android.R.id.home) {
+            getOnBackPressedDispatcher().onBackPressed();
+            return true;
+        } else if (itemId == R.id.open_generate_key) {
+            Log.i(TAG, "Start CreateKeyActivity");
+            startActivity(new Intent(this, CreateKeyActivity.class));
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 }

@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.appcompat.app.AlertDialog;
+
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,7 +33,7 @@ public class TokenFragment extends DialogFragment {
 
     private Handler mHandler;
     private Runnable mTokenTimer;
-    private int mTokenTimerInterval = 1000;
+    private static final int mTokenTimerInterval = 1000;
     private Boolean mValidToken = false;
 
     public TokenFragment() {
@@ -58,7 +60,7 @@ public class TokenFragment extends DialogFragment {
         String token = mSecret.getToken();
         if (token != null) {
             mTokenTextView.setText(token);
-            mTokenExpirationTextView.setText(getString(R.string.token_expiration_message, mSecret.getTokenExpiresIn()));
+            mTokenExpirationTextView.setText(getString(R.string.token_expiration_message, Secret.getTokenExpiresIn()));
         } else {
             if (mSecret.getSecretText() != null && mSecret.getSecretText().startsWith("otpauth://hotp/")) {
                 mTokenTextView.setText(R.string.token_hotp_error_message);
@@ -77,6 +79,7 @@ public class TokenFragment extends DialogFragment {
         // is handled automatically because it has an id. No need to call setRetainInstance(true).
 
         // Get secret from bundle.
+        assert getArguments() != null;
         mSecret = getArguments().getParcelable("secret");
         String secretText = getArguments().getString("secretText");
         mSecret.setSecretText(secretText);
@@ -85,7 +88,7 @@ public class TokenFragment extends DialogFragment {
             mValidToken = true;
         }
 
-        mHandler = new Handler();
+        mHandler = new Handler(Looper.getMainLooper());
     }
 
     @NonNull
@@ -93,12 +96,13 @@ public class TokenFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Log.i(TAG, "onCreateDialog");
         // Do not call super, build our own dialog to set title and add button.
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity())
                 .setTitle(getTitle())
                 .setNegativeButton(R.string.token_dialog_button_ok, null);
 
         // Call default fragment methods to set View for Dialog from builder.
-        View v = onCreateView(getActivity().getLayoutInflater(), null, null);
+        View v = onCreateView(requireActivity().getLayoutInflater(), null, null);
+        assert v != null;
         onViewCreated(v, null);
         builder.setView(v);
 
@@ -107,35 +111,30 @@ public class TokenFragment extends DialogFragment {
         mTokenExpirationTextView = (TextView) v.findViewById(R.id.token_expiration_text);
 
         if (mValidToken) {
-            builder.setPositiveButton(R.string.token_dialog_button_copy, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    ClipboardHelper.copy(getContext().getApplicationContext(), mSecret.getToken());
-                    Toast.makeText(getContext().getApplicationContext(),
-                            getString(R.string.toast_copy_secret_token), Toast.LENGTH_SHORT)
-                            .show();
-                }
+            builder.setPositiveButton(R.string.token_dialog_button_copy, (dialog, which) -> {
+                ClipboardHelper.copy(requireContext().getApplicationContext(), mSecret.getToken());
+                Toast.makeText(requireContext().getApplicationContext(),
+                        getString(R.string.toast_copy_secret_token), Toast.LENGTH_SHORT)
+                        .show();
             });
 
             // Refresh token every second.
-            mTokenTimer = new Runnable() {
-                @Override
-                public void run() {
-                    AlertDialog dialog = (AlertDialog) getDialog();
-                    if (mSecret.getTokenExpiresIn() < 3) {
-                        Button copyButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                        if (copyButton != null) {
-                            copyButton.setEnabled(false);
-                        }
-                    } else {
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+            mTokenTimer = () -> {
+                AlertDialog dialog = (AlertDialog) getDialog();
+                assert dialog != null;
+                if (Secret.getTokenExpiresIn() < 3) {
+                    Button copyButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                    if (copyButton != null) {
+                        copyButton.setEnabled(false);
                     }
+                } else {
+                    dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
+                }
 
-                    try {
-                        showToken();
-                    } finally {
-                        mHandler.postDelayed(mTokenTimer, mTokenTimerInterval);
-                    }
+                try {
+                    showToken();
+                } finally {
+                    mHandler.postDelayed(mTokenTimer, mTokenTimerInterval);
                 }
             };
         } else {

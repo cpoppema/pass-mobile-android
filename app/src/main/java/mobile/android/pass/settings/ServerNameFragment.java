@@ -48,14 +48,15 @@ public class ServerNameFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Log.i(TAG, "onCreateDialog");
         // Do not call super, build our own dialog to set title and add button.
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity())
                 .setTitle(R.string.fragment_server_name_title)
                 // OnClickListener is set below, not here.
                 .setPositiveButton(R.string.fragment_server_name_button_ok, null)
                 .setNegativeButton(R.string.fragment_server_name_button_cancel, null);
 
         // Call default fragment methods to set View for Dialog from builder.
-        View v = onCreateView(getActivity().getLayoutInflater(), null, null);
+        View v = onCreateView(requireActivity().getLayoutInflater(), null, null);
+        assert v != null;
         onViewCreated(v, null);
         builder.setView(v);
 
@@ -74,47 +75,36 @@ public class ServerNameFragment extends DialogFragment {
 
         // Bind OnClickListener to the button within the OnShowListener, otherwise the dialog
         // will ALWAYS be dismissed.
-        alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(final DialogInterface dialog) {
-                Button button = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                button.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String serverAddress = serverInput.getText().toString();
+        alertDialog.setOnShowListener(dialog -> {
+            Button button = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            button.setOnClickListener(v1 -> {
+                String serverAddress = serverInput.getText().toString();
 
-                        // Validate server address.
-                        boolean valid = false;
-                        if (!serverAddress.isEmpty()) {
-                            valid = (serverAddress.startsWith("http://") && serverAddress.length() > 7 ||
-                                    serverAddress.startsWith("https://") && serverAddress.length() > 8);
-                        }
+                // Validate server address.
+                boolean valid = false;
+                if (!serverAddress.isEmpty()) {
+                    valid = (serverAddress.startsWith("http://") && serverAddress.length() > 7 ||
+                            serverAddress.startsWith("https://") && serverAddress.length() > 8);
+                }
 
-                        if (valid) {
-                            // Reset input.
-                            serverInput.setError(null);
-                            serverInput.getText().clear();
+                if (valid) {
+                    // Reset input.
+                    serverInput.setError(null);
+                    serverInput.getText().clear();
 
-                            // Save and dismiss.
-                            mStorageHelper.putServerAddress(serverAddress);
-                            alertDialog.dismiss();
-                        } else {
-                            // Give feedback.
-                            Log.i(TAG, "Show input feedback");
-                            serverInput.setError(getString(R.string.fragment_server_name_invalid));
-                        }
-                    }
-                });
-            }
+                    // Save and dismiss.
+                    mStorageHelper.putServerAddress(serverAddress);
+                    alertDialog.dismiss();
+                } else {
+                    // Give feedback.
+                    Log.i(TAG, "Show input feedback");
+                    serverInput.setError(getString(R.string.fragment_server_name_invalid));
+                }
+            });
         });
 
         // Let the activity know this fragment has been dismissed.
-        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                ((SettingsActivity) getActivity()).setDialogTag(SettingsActivity.NO_DIALOG_TAG);
-            }
-        });
+        alertDialog.setOnDismissListener(dialogInterface -> ((SettingsActivity) requireActivity()).setDialogTag(SettingsActivity.NO_DIALOG_TAG));
 
         if (savedInstanceState == null) {
             // Show keyboard.

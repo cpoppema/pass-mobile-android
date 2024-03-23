@@ -9,7 +9,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.appcompat.app.AlertDialog;
 
-import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -52,13 +51,14 @@ public class UnlockFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Log.i(TAG, "onCreateDialog");
         // Do not call super, build our own dialog to set title and add button.
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity())
                 .setTitle(R.string.fragment_unlock_title)
                 // OnClickListener is set below, not here.
                 .setPositiveButton(R.string.fragment_unlock_action_unlock, null);
 
         // Call default fragment methods to set View for Dialog from builder.
-        View v = onCreateView(getActivity().getLayoutInflater(), null, null);
+        View v = onCreateView(requireActivity().getLayoutInflater(), null, null);
+        assert v != null;
         onViewCreated(v, null);
         builder.setView(v);
 
@@ -70,48 +70,37 @@ public class UnlockFragment extends DialogFragment {
 
         // Bind OnClickListener to the button within the OnShowListener, otherwise the dialog
         // will ALWAYS be dismissed.
-        alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(final DialogInterface dialog) {
-                Button button = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                button.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String passphrase = passphraseInput.getText().toString();
-                        Log.i(TAG, "Passphrase: " + passphrase);
+        alertDialog.setOnShowListener(dialog -> {
+            Button button = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            button.setOnClickListener(v1 -> {
+                String passphrase = passphraseInput.getText().toString();
+                Log.i(TAG, "Passphrase: " + passphrase);
 
-                        // Validate passphrase.
-                        boolean unlocked = false;
-                        if (!passphrase.isEmpty()) {
-                            unlocked = PgpHelper.testPassphraseForKey(mStorageHelper.getPrivateKey(), passphrase);
-                        }
+                // Validate passphrase.
+                boolean unlocked = false;
+                if (!passphrase.isEmpty()) {
+                    unlocked = PgpHelper.testPassphraseForKey(mStorageHelper.getPrivateKey(), passphrase);
+                }
 
-                        Log.i(TAG, "Unlocked: " + Boolean.toString(unlocked));
-                        if (unlocked) {
-                            // Reset input.
-                            passphraseInput.setError(null);
-                            passphraseInput.getText().clear();
+                Log.i(TAG, "Unlocked: " + unlocked);
+                if (unlocked) {
+                    // Reset input.
+                    passphraseInput.setError(null);
+                    passphraseInput.getText().clear();
 
-                            // Move on.
-                            Log.i(TAG, "Start SecretsActivity");
-                            startActivity(new Intent(getActivity(), SecretsActivity.class).putExtra("mPassphrase", passphrase));
-                        } else {
-                            // Give feedback.
-                            Log.i(TAG, "Show input feedback");
-                            passphraseInput.setError(getString(R.string.fragment_unlock_invalid_passphrase));
-                        }
-                    }
-                });
-            }
+                    // Move on.
+                    Log.i(TAG, "Start SecretsActivity");
+                    startActivity(new Intent(getActivity(), SecretsActivity.class).putExtra("mPassphrase", passphrase));
+                } else {
+                    // Give feedback.
+                    Log.i(TAG, "Show input feedback");
+                    passphraseInput.setError(getString(R.string.fragment_unlock_invalid_passphrase));
+                }
+            });
         });
 
         // Let the activity know this fragment has been dismissed.
-        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                ((UnlockActivity) getActivity()).setDialogTag(UnlockActivity.NO_DIALOG_TAG);
-            }
-        });
+        alertDialog.setOnDismissListener(dialogInterface -> ((UnlockActivity) requireActivity()).setDialogTag(UnlockActivity.NO_DIALOG_TAG));
 
         if (savedInstanceState == null) {
             // Show keyboard.

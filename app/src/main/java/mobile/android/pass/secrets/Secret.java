@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.annotation.SuppressLint;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Parcel;
@@ -14,7 +15,6 @@ import android.os.Parcelable;
 import android.text.TextUtils;
 
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -69,6 +69,7 @@ public class Secret implements Parcelable {
         }
     }
 
+    @SuppressLint("Range")
     public Secret(Cursor cursor) {
         mDomain = cursor.getString(cursor.getColumnIndex(DOMAIN));
         mPath = cursor.getString(cursor.getColumnIndex(PATH));
@@ -140,7 +141,7 @@ public class Secret implements Parcelable {
     /**
      * Returns true if @needle was found in @hay using fuzzy matching.
      */
-    private boolean fuzzyContains(String hay, String needle) {
+    private static boolean fuzzyContains(String hay, String needle) {
         hay = hay.toLowerCase();
         needle = needle.toLowerCase();
 
@@ -160,8 +161,8 @@ public class Secret implements Parcelable {
      * (normalized) using fuzzy matching.
      **/
     public boolean isMatch(String needle) {
-        return TextUtils.isEmpty(needle) || fuzzyContains(getDomain(), needle) ||
-                fuzzyContains(getUsername(), needle) || fuzzyContains(getUsernameNormalized(), needle);
+        return TextUtils.isEmpty(needle) || fuzzyContains(mDomain, needle) ||
+                fuzzyContains(mUsername, needle) || fuzzyContains(mUsernameNormalized, needle);
     }
 
     public String getSecretText() {
@@ -179,7 +180,7 @@ public class Secret implements Parcelable {
     public String getPassphrase() {
         if (mPassphrase == null) {
             // Read the first line as the password.
-            mPassphrase = getSecretText().split("\n")[0];
+            mPassphrase = mSecretText.split("\n")[0];
         }
         return mPassphrase;
     }
@@ -191,17 +192,15 @@ public class Secret implements Parcelable {
             // TODO: Use an otp lib to extract otp secret from mSecretText to generate a token here ?
             Uri url = Uri.parse(mSecretText.split("\n")[0]);
             String encodedKey = url.getQueryParameter("secret");
-            if (encodedKey != null && encodedKey.length() > 0) {
+            if (encodedKey != null && !encodedKey.isEmpty()) {
                 Base32 base32 = new Base32();
                 byte[] decodedSecret = base32.decode(encodedKey);
                 SecretKey secretKey = new SecretKeySpec(decodedSecret, 0, decodedSecret.length, "AES");
 
                 try {
                     TimeBasedOneTimePasswordGenerator totp = new TimeBasedOneTimePasswordGenerator();
-                    token = String.valueOf(totp.generateOneTimePassword(secretKey, new Date()));
+                    token = String.valueOf(totp.generateOneTimePassword(secretKey, new Date().toInstant()));
                 } catch (InvalidKeyException e) {
-                    e.printStackTrace();
-                } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
                 }
             }
@@ -210,7 +209,7 @@ public class Secret implements Parcelable {
         return token;
     }
 
-    public Integer getTokenExpiresIn() {
+    public static Integer getTokenExpiresIn() {
         Calendar rightNow = Calendar.getInstance();
         int seconds = rightNow.get(Calendar.SECOND);
         return 30 - seconds % 30;

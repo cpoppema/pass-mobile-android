@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import java.util.Objects;
+
 import mobile.android.pass.R;
 import mobile.android.pass.utils.StorageHelper;
 
@@ -25,17 +27,15 @@ public class PublicKeyActivity extends AppCompatActivity {
         publicKeyView.setText(publicKey);
 
         // Add back button to action bar.
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (item.getItemId() == android.R.id.home) {
+            getOnBackPressedDispatcher().onBackPressed();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 }

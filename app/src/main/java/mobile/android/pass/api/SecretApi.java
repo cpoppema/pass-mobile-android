@@ -17,7 +17,7 @@ public class SecretApi extends Api implements Response.Listener<JSONObject>, Res
     private static final String BODY_PATH = "path";
     private static final String BODY_USERNAME = "username";
 
-    private SecretCallback mCallback;
+    private final SecretCallback mCallback;
 
     public SecretApi(Context context, SecretCallback callback) {
         super(context);

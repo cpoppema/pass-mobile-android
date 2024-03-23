@@ -2,16 +2,16 @@ package mobile.android.pass.utils;
 
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
+import org.spongycastle.bcpg.PublicKeyAlgorithmTags;
+import org.spongycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.spongycastle.openpgp.PGPCompressedData;
-import org.spongycastle.openpgp.PGPEncryptedData;
 import org.spongycastle.openpgp.PGPEncryptedDataList;
 import org.spongycastle.openpgp.PGPException;
 import org.spongycastle.openpgp.PGPKeyPair;
 import org.spongycastle.openpgp.PGPLiteralData;
 import org.spongycastle.openpgp.PGPObjectFactory;
 import org.spongycastle.openpgp.PGPPrivateKey;
-import org.spongycastle.openpgp.PGPPublicKey;
 import org.spongycastle.openpgp.PGPPublicKeyEncryptedData;
 import org.spongycastle.openpgp.PGPSecretKey;
 import org.spongycastle.openpgp.PGPSecretKeyRing;
@@ -34,7 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -51,7 +51,6 @@ public class PgpHelper {
     private static final String TAG = PgpHelper.class.toString();
 
     private static final int KEY_PAIR_BITS = 2048;
-    private static final String CHARSET = "UTF-8";
     private static final String SECURITY_PROVIDER = "SC";
     private static final String ALGORITHM = "RSA";
 
@@ -73,7 +72,7 @@ public class PgpHelper {
             KeyPair pair = generator.generateKeyPair();
 
             PGPDigestCalculator sha1Calc = new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA1);
-            PGPKeyPair pgpPair = new JcaPGPKeyPair(PGPPublicKey.RSA_GENERAL, pair, new Date());
+            PGPKeyPair pgpPair = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_GENERAL, pair, new Date());
 
             PGPSecretKey secretKey = new PGPSecretKey(
                     PGPSignature.DEFAULT_CERTIFICATION,
@@ -86,16 +85,12 @@ public class PgpHelper {
                             pgpPair.getPublicKey().getAlgorithm(),
                             HashAlgorithmTags.SHA1),
                     new JcePBESecretKeyEncryptorBuilder(
-                            PGPEncryptedData.CAST5, sha1Calc)
+                            SymmetricKeyAlgorithmTags.CAST5, sha1Calc)
                             .setProvider(SECURITY_PROVIDER)
                             .build(passphrase.toCharArray()));
 
             return secretKey;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (PGPException e) {
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | PGPException e) {
             e.printStackTrace();
         }
 
@@ -108,7 +103,7 @@ public class PgpHelper {
             ArmoredOutputStream pubArmorStream = new ArmoredOutputStream(pubStream);
             secretKey.getPublicKey().encode(pubArmorStream);
             pubArmorStream.close();
-            return new String(pubStream.toByteArray(), Charset.forName(CHARSET));
+            return new String(pubStream.toByteArray(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -122,7 +117,7 @@ public class PgpHelper {
             ArmoredOutputStream secretArmorStream = new ArmoredOutputStream(secretStream);
             secretKey.encode(secretArmorStream);
             secretArmorStream.close();
-            return new String(secretStream.toByteArray(), Charset.forName(CHARSET));
+            return new String(secretStream.toByteArray(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -145,9 +140,7 @@ public class PgpHelper {
         try {
             return new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(inputStream),
                     new JcaKeyFingerprintCalculator());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (PGPException e) {
+        } catch (IOException | PGPException e) {
             e.printStackTrace();
         }
 
@@ -156,6 +149,7 @@ public class PgpHelper {
 
     private static PGPSecretKey getSecretKey(byte[] privateKey) {
         PGPSecretKeyRingCollection keyRing = extractSecretKeyCollection(privateKey);
+        assert keyRing != null;
         Iterator<PGPSecretKeyRing> keyRingIterator = keyRing.getKeyRings();
         PGPSecretKey secretKey = keyRingIterator.next().getSecretKey();
         return secretKey;
@@ -193,7 +187,7 @@ public class PgpHelper {
     public static String decrypt(PGPPrivateKey privateKey, String ciphertext) {
         try {
             // Convert the String to a InputStream.
-            byte[] encryptedBytes = ciphertext.getBytes(Charset.forName(CHARSET));
+            byte[] encryptedBytes = ciphertext.getBytes(StandardCharsets.UTF_8);
             InputStream encryptedInputStream = new ByteArrayInputStream(encryptedBytes);
             encryptedInputStream = PGPUtil.getDecoderStream(encryptedInputStream);
             // Create PGP Objects from the InputStream.
@@ -256,7 +250,7 @@ public class PgpHelper {
             // Convert the LiteralData steam into a String object.
             if (decryptedMessage instanceof PGPLiteralData) {
                 PGPLiteralData literalData = (PGPLiteralData) decryptedMessage;
-                return new String(Streams.readAll(literalData.getInputStream()), Charset.forName(CHARSET));
+                return new String(Streams.readAll(literalData.getInputStream()), StandardCharsets.UTF_8);
             }
         } catch (Exception e) {
             e.printStackTrace();

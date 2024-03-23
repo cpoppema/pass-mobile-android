@@ -12,14 +12,12 @@ import java.util.ArrayList;
  * Loads a list of secrets into a @Cursor.
  */
 public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
-    private static final String TAG = SecretsActivity.class.toString();
-
     // Data structure to store retrieved or filtered secrets in.
     private Cursor mCursor;
     // Query used to filter secrets.
     private String mFilter;
     // List of secrets before a filter is applied.
-    private ArrayList<Secret> mOriginalSecrets;
+    private final ArrayList<Secret> mOriginalSecrets;
 
     /** Constructor used when building a clean list of given secrets. **/
     public SecretsTaskLoader(Context context, ArrayList<Secret> secrets) {
@@ -92,7 +90,7 @@ public class SecretsTaskLoader extends AsyncTaskLoader<Cursor> {
             super.deliverResult(cursor);
         }
 
-        if (oldCursor != null && oldCursor != cursor && !oldCursor.isClosed()) {
+        if (oldCursor != null && !oldCursor.equals(cursor) && !oldCursor.isClosed()) {
             oldCursor.close();
         }
     }

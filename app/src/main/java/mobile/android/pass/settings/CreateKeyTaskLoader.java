@@ -49,7 +49,7 @@ public class CreateKeyTaskLoader extends AsyncTaskLoader<PGPSecretKey> {
 
     @Override
     public void deliverResult(PGPSecretKey keyPair) {
-        Log.d(TAG, "deliverResult, result is null: " + Boolean.toString(keyPair == null));
+        Log.d(TAG, "deliverResult, result is null: " + (keyPair == null));
 
         super.deliverResult(keyPair);
     }

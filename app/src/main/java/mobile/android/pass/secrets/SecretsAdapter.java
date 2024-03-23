@@ -1,5 +1,6 @@
 package mobile.android.pass.secrets;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import androidx.cursoradapter.widget.CursorAdapter;
@@ -12,6 +13,8 @@ import android.widget.RelativeLayout;
 import android.widget.SectionIndexer;
 import android.widget.TextView;
 
+import java.util.Objects;
+
 import mobile.android.pass.R;
 import mobile.android.pass.utils.ImageViewHelper;
 
@@ -20,12 +23,12 @@ import mobile.android.pass.utils.ImageViewHelper;
 public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
 
     // Sections for fast scroll.
-    private final String ALPHABET = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String ALPHABET = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     // SectionIndexer using the Latin alphabet.
     private AlphabetIndexer mAlphabetIndexer;
     // Context reference.
-    private Context mContext;
+    private final Context mContext;
 
     public SecretsAdapter(Context context) {
         super(context, null, false);
@@ -112,27 +115,26 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
     /** Display a single secret's information, used inside a ListView **/
     public static class SecretViewHolder {
         // Background view.
-        private RelativeLayout mItem;
+        private final RelativeLayout mItem;
 
-        // Left-hand icon with the first letter of the domain.
-        private ImageView mIcon;
-        private TextView mIconText;
+        private final TextView mIconText;
 
         // Full length version of the domain (as long as it fits).
-        private TextView mDomain;
+        private final TextView mDomain;
 
         // Full length version of the username (as long as it fits).
-        private TextView mUsername;
+        private final TextView mUsername;
 
         // Text "2FA" that opens a Fragment to view and copy a two-factor-auth token.
-        private TextView mOtp;
+        private final TextView mOtp;
 
         // Icon that triggers a PopupMenu with actions (copy/show/etc.).
-        private View mActions;
+        private final View mActions;
 
         public SecretViewHolder(View v) {
             mItem = (RelativeLayout) v.findViewById(R.id.item_secret);
-            mIcon = (ImageView) v.findViewById(R.id.item_secret_icon);
+            // Left-hand icon with the first letter of the domain.
+            ImageView mIcon = (ImageView) v.findViewById(R.id.item_secret_icon);
             mIconText = (TextView) v.findViewById(R.id.item_secret_icon_text);
             mDomain = (TextView) v.findViewById(R.id.item_secret_domain);
             mUsername = (TextView) v.findViewById(R.id.item_secret_username);
@@ -156,6 +158,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
         }
 
         /** Copy text from Cursor object to all the TextViews **/
+        @SuppressLint("Range")
         public void bindData(Cursor cursor) {
             String domain = cursor.getString(cursor.getColumnIndex(Secret.DOMAIN));
             String username = cursor.getString(cursor.getColumnIndex(Secret.USERNAME));
@@ -165,7 +168,7 @@ public class SecretsAdapter extends CursorAdapter implements SectionIndexer {
             mDomain.setText(domain);
             mUsername.setText(username);
             mIconText.setText(iconText);
-            mOtp.setVisibility((otp == Secret.OTP_YES) ? View.VISIBLE : View.GONE);
+            mOtp.setVisibility((Objects.equals(otp, Secret.OTP_YES)) ? View.VISIBLE : View.GONE);
         }
     }
 }

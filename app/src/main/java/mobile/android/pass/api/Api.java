@@ -30,11 +30,11 @@ public abstract class Api {
     public static final String SECRET_ENDPOINT = "/secret/";
 
     private static final String TAG = Api.class.toString();
-    protected final String mResponseKey = "response";
+    protected static final String mResponseKey = "response";
     protected RequestQueue mRequestQueue;
     protected StorageHelper mStorageHelper;
     protected String mTag;
-    private Context mContext;
+    private final Context mContext;
 
 
     public Api(Context context) {

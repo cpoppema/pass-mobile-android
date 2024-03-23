@@ -5,15 +5,16 @@ import org.spongycastle.openpgp.PGPSecretKey;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
+import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
 
 /**
  * Class that acts as middleware between a storage engine and the app.
  */
 public class StorageHelper {
-    private SharedPreferences mSharedPreferences;
+    private final SharedPreferences mSharedPreferences;
 
     /**
      * Constructor.
@@ -65,7 +66,7 @@ public class StorageHelper {
     }
 
     public byte[] getPrivateKey() {
-        return this.getArmoredPrivateKey().getBytes(Charset.forName("UTF-8"));
+        return this.getArmoredPrivateKey().getBytes(StandardCharsets.UTF_8);
     }
 
     public void putKeyID(String keyID) {
@@ -91,19 +92,16 @@ public class StorageHelper {
         PUBLIC_KEY_ID("pref_key_public_key_id"),
         SERVER_ADDRESS("pref_key_server");
 
-        private String key;
+        private final String key;
 
         StorageKey(String key) {
             this.key = key;
         }
 
-        public String getKey() {
-            return key;
-        }
-
+        @NonNull
         @Override
         public String toString() {
-            return this.getKey();
+            return this.key;
         }
     }
 }

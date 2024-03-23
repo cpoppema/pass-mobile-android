@@ -1,7 +1,6 @@
 package mobile.android.pass.secrets;
 
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -45,7 +44,7 @@ public class SecretFragment extends DialogFragment {
     }
 
     private String getMessage() {
-        return mSecret.getUsername() + "\n" + mSecret.getSecretText();
+        return mSecret.getUsername() + '\n' + mSecret.getSecretText();
     }
 
     @Override
@@ -57,6 +56,7 @@ public class SecretFragment extends DialogFragment {
         // is handled automatically because it has an id. No need to call setRetainInstance(true).
 
         // Get secret from bundle.
+        assert getArguments() != null;
         mSecret = getArguments().getParcelable("secret");
         String secretText = getArguments().getString("secretText");
         mSecret.setSecretText(secretText);
@@ -67,22 +67,20 @@ public class SecretFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Log.i(TAG, "onCreateDialog");
         // Do not call super, build our own dialog to set title and add button.
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity())
                 .setTitle(getTitle())
                 .setNegativeButton(R.string.secret_dialog_button_ok, null)
-                .setPositiveButton(R.string.secret_dialog_button_copy, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        ClipboardHelper.copy(getContext().getApplicationContext(), mSecret.getPassphrase());
-                        Toast.makeText(getContext().getApplicationContext(),
-                                getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
-                                .show();
-                    }
+                .setPositiveButton(R.string.secret_dialog_button_copy, (dialog, which) -> {
+                    ClipboardHelper.copy(requireContext().getApplicationContext(), mSecret.getPassphrase());
+                    Toast.makeText(requireContext().getApplicationContext(),
+                            getString(R.string.toast_copy_secret_password), Toast.LENGTH_SHORT)
+                            .show();
                 });
 
 
         // Call default fragment methods to set View for Dialog from builder.
-        View v = onCreateView(getActivity().getLayoutInflater(), null, null);
+        View v = onCreateView(requireActivity().getLayoutInflater(), null, null);
+        assert v != null;
         onViewCreated(v, null);
         builder.setView(v);
 
