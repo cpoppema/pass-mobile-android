@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.util.Objects;
 
@@ -28,6 +29,9 @@ import mobile.android.pass.utils.StorageHelper;
 
 public class CreateKeyActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<PGPSecretKey> {
     private static final String TAG = CreateKeyActivity.class.toString();
+
+    // Set a debug keypair when pressing "Generate 3 times in an empty install"
+    private int mEmptyGeneratePressCount = 0;
 
     // Generate key form view (containing the inputs and button).
     private View mCreateKeyFormView;
@@ -103,6 +107,7 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
 
+        mEmptyGeneratePressCount = 0;  // always reset counter
         Log.i(TAG, "onRestoreInstanceState");
     }
 
@@ -186,6 +191,16 @@ public class CreateKeyActivity extends AppCompatActivity implements LoaderManage
             focusView.requestFocus();
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.showSoftInput(focusView, InputMethodManager.SHOW_IMPLICIT);
+
+            // For debug/review purposes.
+            mEmptyGeneratePressCount++;
+            if (mEmptyGeneratePressCount >= 3) {
+                if (mStorageHelper.getKeyName().isEmpty()) {
+                    mStorageHelper.putDebugKeyPair();
+                    Toast.makeText(getApplicationContext(), R.string.toast_using_debug_key, Toast.LENGTH_SHORT).show();
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
         } else {
             // Save key name.
             mStorageHelper.putKeyName(keyName);

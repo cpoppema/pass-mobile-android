@@ -87,6 +87,8 @@
     <string name="token_hotp_error_message">It looks like this token is a HMAC-based One Time Password (HOTP).\n\nOnly Time-based One Time Passwords (TOTP) are possible at this time.</string>
 
     <!-- CreateKeyActivity -->
+    <string name="toast_using_debug_key">Debug keypair is now active</string>
+
     <string name="prompt_key_name">Key name</string>
     <string name="prompt_passphrase">Passphrase</string>
     <string name="action_create_key">GENERATE</string>
